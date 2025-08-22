@@ -492,37 +492,226 @@ body::-webkit-scrollbar-thumb:hover {
 
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
+  /* Base styles */
   body {
     background: #1a1a1a;
     color: #e1e1e1;
   }
   
+  /* Header styles */
+  .header {
+    background: linear-gradient(135deg, #1580C4 0%, #1368A5 100%);
+    color: #ffffff;
+  }
+  
+  .version {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+  }
+  
+  /* Section backgrounds and borders */
   .status-section,
   .stats-section,
   .settings-section,
   .actions-section {
     background: #2d2d2d;
-    border-color: #444;
+    border-color: #444444;
   }
   
-  .footer {
-    background: #1a1a1a;
-    border-color: #444;
+  /* Status section elements */
+  .status-text {
+    color: #e1e1e1;
+  }
+  
+  .status-icon {
+    background: #666666;
+  }
+  
+  .status-icon.active {
+    background: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.25);
+  }
+  
+  .status-icon.inactive {
+    background: #f44336;
+    box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.25);
+  }
+  
+  /* Section headings */
+  h2 {
+    color: #e1e1e1;
+  }
+  
+  /* Settings section elements */
+  .setting-label {
+    color: #e1e1e1;
+  }
+  
+  .setting-description {
+    color: #b3b3b3;
+  }
+  
+  .setting-item {
+    border-bottom-color: #444444;
   }
   
   .setting-select {
     background: #2d2d2d;
-    border-color: #555;
+    border-color: #555555;
     color: #e1e1e1;
+  }
+  
+  .setting-select option {
+    background: #2d2d2d;
+    color: #e1e1e1;
+  }
+  
+  .setting-select:focus {
+    border-color: #1DA1F2;
+    box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.25);
+  }
+  
+  /* Toggle switches */
+  .toggle-slider {
+    background: #555555;
+  }
+  
+  .toggle-slider:before {
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  input:checked + .toggle-slider {
+    background: #1DA1F2;
+  }
+  
+  /* Action buttons */
+  .action-button.primary {
+    background: #1DA1F2;
+    color: #ffffff;
+  }
+  
+  .action-button.primary:hover {
+    background: #1991DB;
+    box-shadow: 0 4px 12px rgba(29, 161, 242, 0.4);
   }
   
   .action-button.secondary {
     background: #2d2d2d;
     color: #e1e1e1;
-    border-color: #555;
+    border-color: #555555;
   }
   
   .action-button.secondary:hover {
     background: #3d3d3d;
+    border-color: #666666;
+  }
+  
+  /* Footer elements */
+  .footer {
+    background: #1a1a1a;
+    border-color: #444444;
+  }
+  
+  .footer-links a {
+    color: #4DA6FF;
+  }
+  
+  .footer-links a:hover {
+    color: #66B3FF;
+  }
+  
+  .separator {
+    color: #666666;
+  }
+  
+  .footer-text {
+    color: #b3b3b3;
+  }
+  
+  /* Loading overlay */
+  .loading-overlay {
+    background: rgba(26, 26, 26, 0.95);
+  }
+  
+  .loading-spinner {
+    border-color: #444444;
+    border-top-color: #1DA1F2;
+  }
+  
+  .loading-text {
+    color: #e1e1e1;
+  }
+  
+  /* Message styles */
+  .error-message {
+    background: #3d1a1a;
+    border-color: #662d2d;
+    color: #ff6b6b;
+  }
+  
+  .error-text {
+    color: #ff6b6b;
+  }
+  
+  .error-close {
+    color: #ff6b6b;
+    background: transparent;
+  }
+  
+  .error-close:hover {
+    color: #ff8a8a;
+  }
+  
+  .success-message {
+    background: #1a3d1a;
+    border-color: #2d662d;
+    color: #4caf50;
+  }
+  
+  .success-text {
+    color: #4caf50;
+  }
+  
+  .success-close {
+    color: #4caf50;
+    background: transparent;
+  }
+  
+  .success-close:hover {
+    color: #6bc76b;
+  }
+  
+  /* Scrollbar styles for dark mode */
+  body::-webkit-scrollbar-track {
+    background: #2d2d2d;
+  }
+  
+  body::-webkit-scrollbar-thumb {
+    background: #555555;
+  }
+  
+  body::-webkit-scrollbar-thumb:hover {
+    background: #666666;
+  }
+  
+  /* Focus indicators for accessibility */
+  .action-button:focus,
+  .toggle-switch:focus-within,
+  .footer-links a:focus {
+    outline: 2px solid #1DA1F2;
+    outline-offset: 2px;
+  }
+  
+  /* Ensure text contrast in all states */
+  .stat-item,
+  .next-scheduled {
+    color: #ffffff;
+  }
+  
+  .stat-label,
+  .next-draft-text {
+    opacity: 0.9;
+    color: #ffffff;
   }
 }
