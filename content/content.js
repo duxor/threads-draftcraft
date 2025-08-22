@@ -534,11 +534,21 @@ class ThreadsDrafter {
     const days = Math.floor(hours / 24);
 
     if (days > 0) {
-      return `in ${days} day${days > 1 ? 's' : ''} - ${hours} hours`;
+      return `in ${days} day${days > 1 ? 's' : ''} - ${hours}h`;
     } else if (hours > 0) {
       return `in ${hours} hour${hours > 1 ? 's' : ''}`;
     } else {
-      return 'very soon';
+      // Calculate exact minutes and seconds for precise display
+      const minutes = Math.floor(diff / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      if (minutes > 0) {
+        return `in ${minutes} minute${minutes > 1 ? 's' : ''}`;
+      } else if (seconds > 0) {
+        return `in ${seconds} second${seconds > 1 ? 's' : ''}`;
+      } else {
+        return 'in a few seconds';
+      }
     }
   }
 
