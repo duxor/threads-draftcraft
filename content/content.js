@@ -53,10 +53,10 @@ class ThreadsDrafter {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === 'toggleExtension') {
         this.isExtensionEnabled = message.enabled;
-        this.processDrafts();
+        this.processDrafts(null, true); // Force reprocessing
       } else if (message.action === 'changeSortOrder') {
         this.sortOrder = message.sortOrder;
-        this.processDrafts();
+        this.processDrafts(null, true); // Force reprocessing
       } else if (message.action === 'getDraftStats') {
         sendResponse({
           totalDrafts: this.drafts.length,
@@ -73,10 +73,28 @@ class ThreadsDrafter {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList') {
+          // Skip mutations caused by our own extension elements
+          const isExtensionMutation = mutation.addedNodes && 
+            Array.from(mutation.addedNodes).some(node => 
+              node.nodeType === Node.ELEMENT_NODE && 
+              (node.classList?.contains('threads-drafter-indicator') || 
+               node.classList?.contains('threads-drafter-count') ||
+               node.classList?.contains('threads-drafter-time'))
+            );
+          
+          if (isExtensionMutation) {
+            return; // Skip processing this mutation
+          }
+          
           // Look for drafts dialog or modal
           const dialogElements = document.querySelectorAll('[role="dialog"], .x1n2onr6');
           
           dialogElements.forEach((dialog) => {
+            // Check if dialog is already processed to prevent infinite loop
+            if (dialog.hasAttribute('data-threads-drafter-processed')) {
+              return;
+            }
+            
             if (this.isDraftsDialog(dialog)) {
               console.log('[Threads Drafter] Drafts dialog detected');
               this.processDrafts(dialog);
@@ -102,6 +120,11 @@ class ThreadsDrafter {
     const dialogElements = document.querySelectorAll('[role="dialog"], .x1n2onr6');
     
     dialogElements.forEach((dialog) => {
+      // Check if dialog is already processed to prevent infinite loop
+      if (dialog.hasAttribute('data-threads-drafter-processed')) {
+        return;
+      }
+      
       if (this.isDraftsDialog(dialog)) {
         console.log('[Threads Drafter] Existing drafts dialog found');
         this.processDrafts(dialog);
@@ -113,29 +136,88 @@ class ThreadsDrafter {
    * Determine if a dialog element contains drafts
    */
   isDraftsDialog(element) {
-    // Look for draft-specific indicators
     const textContent = element.textContent.toLowerCase();
     
-    // Check for draft-related text or UI elements
-    if (textContent.includes('draft') || 
-        textContent.includes('scheduled') ||
-        element.querySelector('[data-testid*="draft"]')) {
-      return true;
+    // First, check for edit/compose dialog indicators - if found, this is NOT a drafts dialog
+    const editIndicators = [
+      'new thread',
+      'add a topic',
+      'what\'s new?',
+      'attach media',
+      'add a gif',
+      'add an emoji',
+      'add a poll',
+      'add a location',
+      'add to thread',
+      'anyone can reply'
+    ];
+    
+    for (const indicator of editIndicators) {
+      if (textContent.includes(indicator)) {
+        console.log('[Threads Drafter] Edit dialog detected, ignoring:', indicator);
+        return false;
+      }
     }
-
-    // Check for multiple post-like structures that might be drafts
-    const postElements = element.querySelectorAll('div[data-testid*="post"], div[class*="post"]');
-    if (postElements.length > 1) {
-      return true;
+    
+    // Check for specific drafts dialog indicators
+    const draftsIndicators = [
+      'posting tomorrow at',
+      'posting today at',
+      'posting in',
+      'scheduled for'
+    ];
+    
+    let hasDraftsIndicator = false;
+    for (const indicator of draftsIndicators) {
+      if (textContent.includes(indicator)) {
+        hasDraftsIndicator = true;
+        break;
+      }
     }
+    
+    // Must have "drafts" text AND scheduling indicators to be considered a drafts dialog
+    const hasDraftsText = textContent.includes('draft');
+    
+    // Additional check: look for multiple scheduled posts pattern
+    const hasMultipleScheduledPosts = (textContent.match(/posting (today|tomorrow) at/g) || []).length > 1;
+    
+    // Only return true if we have clear drafts indicators and no edit indicators
+    const isDrafts = hasDraftsText && (hasDraftsIndicator || hasMultipleScheduledPosts);
+    
+    if (isDrafts) {
+      console.log('[Threads Drafter] Confirmed drafts dialog with indicators');
+    }
+    
+    return isDrafts;
+  }
 
-    return false;
+  /**
+   * Remove existing extension enhancements from dialog
+   */
+  removeExistingEnhancements(dialogElement) {
+    // Remove extension indicators
+    const indicators = dialogElement.querySelectorAll('.threads-drafter-indicator');
+    indicators.forEach(indicator => indicator.remove());
+    
+    // Remove draft count indicators
+    const countIndicators = dialogElement.querySelectorAll('.threads-drafter-count');
+    countIndicators.forEach(indicator => indicator.remove());
+    
+    // Remove time indicators and reset processed flags
+    const timeIndicators = dialogElement.querySelectorAll('.threads-drafter-time');
+    timeIndicators.forEach(indicator => indicator.remove());
+    
+    // Reset all processed flags on draft elements
+    const processedElements = dialogElement.querySelectorAll('[data-threads-drafter-time-added]');
+    processedElements.forEach(element => element.removeAttribute('data-threads-drafter-time-added'));
+    
+    console.log('[Threads Drafter] Removed existing enhancements for reprocessing');
   }
 
   /**
    * Process drafts in the dialog
    */
-  processDrafts(dialogElement = null) {
+  processDrafts(dialogElement = null, force = false) {
     if (!this.isExtensionEnabled) {
       return;
     }
@@ -148,6 +230,16 @@ class ThreadsDrafter {
       }
     }
 
+    // Check if already processed to prevent infinite loop (unless forced)
+    if (!force && dialogElement.hasAttribute('data-threads-drafter-processed')) {
+      return;
+    }
+
+    // If forcing reprocessing, remove existing extension elements first
+    if (force) {
+      this.removeExistingEnhancements(dialogElement);
+    }
+
     // Extract drafts from the dialog
     this.extractDrafts(dialogElement);
 
@@ -156,6 +248,9 @@ class ThreadsDrafter {
 
     // Apply improvements to the UI
     this.enhanceUI(dialogElement);
+
+    // Mark dialog as processed to prevent re-processing
+    dialogElement.setAttribute('data-threads-drafter-processed', 'true');
   }
 
   /**
@@ -198,41 +293,77 @@ class ThreadsDrafter {
   findDraftElements(dialogElement) {
     const draftElements = [];
 
-    // Try different selectors to find draft posts
-    const selectors = [
+    // Try specific selectors first for proper draft post elements
+    const specificSelectors = [
       'div[data-testid*="post"]',
       'div[class*="post"]',
-      'div[data-pressable-container="true"]',
-      'div > div > div > div > div' // Generic nested divs that might contain drafts
+      'div[data-pressable-container="true"]'
     ];
 
-    for (let selector of selectors) {
+    for (let selector of specificSelectors) {
       const elements = dialogElement.querySelectorAll(selector);
       if (elements.length > 0) {
-        draftElements.push(...Array.from(elements));
-        break;
+        // Filter to only include elements that actually contain draft content
+        const validDrafts = Array.from(elements).filter(element => {
+          const text = element.textContent.toLowerCase();
+          return text.includes('posting') && (text.includes('today') || text.includes('tomorrow') || text.includes('at'));
+        });
+        if (validDrafts.length > 0) {
+          draftElements.push(...validDrafts);
+          break;
+        }
       }
     }
 
-    // If no specific selectors work, try to find elements with draft-like content
+    // If no specific selectors work, look for elements containing scheduling text
     if (draftElements.length === 0) {
       const allDivs = dialogElement.querySelectorAll('div');
-      const textContent = dialogElement.textContent;
+      const foundDrafts = new Set(); // Prevent duplicates
       
-      // If we can see truncated content like in the example, look for those patterns
-      if (textContent.includes('keyboard') || textContent.includes('calendar')) {
-        // Find divs that likely contain draft content
-        allDivs.forEach(div => {
-          if (div.textContent.trim().length > 10 && 
-              div.children.length < 10 && 
-              div.textContent.length < 200) {
-            draftElements.push(div);
+      allDivs.forEach(div => {
+        const text = div.textContent.trim();
+        
+        // Look for elements that contain actual scheduling information
+        if (text.length > 20 && text.length < 500 && 
+            (text.includes('Posting today at') || 
+             text.includes('Posting tomorrow at') || 
+             text.includes('Posting in'))) {
+          
+          // Make sure this isn't a child of an already found element
+          let isChild = false;
+          for (let found of foundDrafts) {
+            if (found.contains(div) || div.contains(found)) {
+              isChild = true;
+              break;
+            }
           }
-        });
-      }
+          
+          if (!isChild) {
+            foundDrafts.add(div);
+          }
+        }
+      });
+      
+      draftElements.push(...Array.from(foundDrafts));
     }
 
-    return draftElements;
+    // Final filter: remove any elements that are children of other selected elements
+    const filteredElements = [];
+    draftElements.forEach(element => {
+      let isChild = false;
+      for (let other of draftElements) {
+        if (other !== element && other.contains(element)) {
+          isChild = true;
+          break;
+        }
+      }
+      if (!isChild) {
+        filteredElements.push(element);
+      }
+    });
+
+    console.log(`[Threads Drafter] Selected ${filteredElements.length} draft elements from ${draftElements.length} candidates`);
+    return filteredElements;
   }
 
   /**
@@ -292,32 +423,102 @@ class ThreadsDrafter {
    * Extract scheduled time from draft element
    */
   extractScheduledTime(element) {
-    // Look for time-related text or attributes
-    const timeIndicators = [
-      'scheduled for',
-      'will post',
-      'posting at',
-      'scheduled',
-      /\d{1,2}:\d{2}/,  // Time format
-      /\d{1,2}\/\d{1,2}/, // Date format
-    ];
-
-    const textContent = element.textContent.toLowerCase();
+    const originalText = element.textContent;
+    const textContent = originalText.toLowerCase();
     
-    // For now, since we don't have actual scheduled time in the example,
-    // we'll create mock scheduled times for demonstration
-    const mockTimes = [
-      new Date(Date.now() + 1 * 60 * 60 * 1000), // 1 hour from now
-      new Date(Date.now() + 3 * 60 * 60 * 1000), // 3 hours from now
-      new Date(Date.now() + 6 * 60 * 60 * 1000), // 6 hours from now
-      new Date(Date.now() + 12 * 60 * 60 * 1000), // 12 hours from now
-      new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+    // Try to extract actual time strings from Threads.com draft content
+    // Look for patterns like "today at 2:14 pm", "tomorrow at 12:36 PM", etc.
+    
+    // Pattern to match times: "today/tomorrow at HH:MM AM/PM"
+    const timePatterns = [
+      /(?:posting\s+)?(?:today|tomorrow)\s+at\s+(\d{1,2}):(\d{2})\s*(am|pm)/i,
+      /(\d{1,2}):(\d{2})\s*(am|pm)/i // Fallback for just the time
     ];
-
-    // Return a mock time based on the element's position
+    
+    let timeMatch = null;
+    for (const pattern of timePatterns) {
+      timeMatch = originalText.match(pattern);
+      if (timeMatch) break;
+    }
+    
+    if (timeMatch) {
+      const hours = parseInt(timeMatch[1]);
+      const minutes = parseInt(timeMatch[2]);
+      const isPM = timeMatch[3].toLowerCase() === 'pm';
+      
+      // Convert to 24-hour format
+      let hour24 = hours;
+      if (isPM && hours !== 12) {
+        hour24 += 12;
+      } else if (!isPM && hours === 12) {
+        hour24 = 0;
+      }
+      
+      // Create date object for today or tomorrow
+      const now = new Date();
+      const scheduledDate = new Date(now);
+      
+      // Determine if it's today or tomorrow
+      if (textContent.includes('tomorrow')) {
+        scheduledDate.setDate(now.getDate() + 1);
+      }
+      
+      scheduledDate.setHours(hour24, minutes, 0, 0);
+      
+      // If the time has already passed today, schedule for tomorrow
+      if (!textContent.includes('tomorrow') && scheduledDate <= now) {
+        scheduledDate.setDate(now.getDate() + 1);
+      }
+      
+      console.log(`[Threads Drafter] Parsed time from "${timeMatch[0]}" -> ${scheduledDate.toLocaleString()}`);
+      return scheduledDate;
+    }
+    
+    // Fallback patterns for relative time indicators
+    
+    // Check for "today" indicators without specific time
+    if (textContent.includes('posting today') || textContent.includes('today at')) {
+      // Generate times for today (next few hours)
+      const hoursFromNow = Math.floor(Math.random() * 8) + 1; // 1-8 hours from now
+      return new Date(Date.now() + hoursFromNow * 60 * 60 * 1000);
+    }
+    
+    // Check for "tomorrow" indicators without specific time
+    if (textContent.includes('posting tomorrow') || textContent.includes('tomorrow at')) {
+      // Generate times for tomorrow (24+ hours from now)
+      const hoursFromNow = Math.floor(Math.random() * 12) + 24; // 24-35 hours from now
+      return new Date(Date.now() + hoursFromNow * 60 * 60 * 1000);
+    }
+    
+    // Check for "in X hours" or "in X days" patterns
+    const inHoursMatch = textContent.match(/in (\d+) hours?/);
+    if (inHoursMatch) {
+      const hours = parseInt(inHoursMatch[1]);
+      return new Date(Date.now() + hours * 60 * 60 * 1000);
+    }
+    
+    const inDaysMatch = textContent.match(/in (\d+) days?/);
+    if (inDaysMatch) {
+      const days = parseInt(inDaysMatch[1]);
+      return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    }
+    
+    // Final fallback: assign times based on position to maintain some order
     const index = parseInt(element.getAttribute('data-draft-index')) || 
                   Array.from(element.parentElement?.children || []).indexOf(element) || 0;
     
+    // Create chronologically ordered times as fallback
+    const mockTimes = [
+      new Date(Date.now() + 2 * 60 * 60 * 1000),  // 2 hours from now
+      new Date(Date.now() + 4 * 60 * 60 * 1000),  // 4 hours from now
+      new Date(Date.now() + 8 * 60 * 60 * 1000),  // 8 hours from now
+      new Date(Date.now() + 16 * 60 * 60 * 1000), // 16 hours from now
+      new Date(Date.now() + 25 * 60 * 60 * 1000), // 25 hours from now (tomorrow)
+      new Date(Date.now() + 30 * 60 * 60 * 1000), // 30 hours from now (tomorrow)
+      new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours from now (day after)
+    ];
+    
+    console.log(`[Threads Drafter] Using fallback time for index ${index}`);
     return mockTimes[index % mockTimes.length];
   }
 
@@ -428,9 +629,14 @@ class ThreadsDrafter {
    */
   addTimeIndicators() {
     this.drafts.forEach((draft) => {
-      // Remove existing indicator
-      const existing = draft.element.querySelector('.threads-drafter-time');
-      if (existing) existing.remove();
+      // Skip if this element already has been processed (additional safety check)
+      if (draft.element.hasAttribute('data-threads-drafter-time-added')) {
+        return;
+      }
+
+      // Remove any existing indicators (both our own and any duplicates)
+      const existingIndicators = draft.element.querySelectorAll('.threads-drafter-time');
+      existingIndicators.forEach(indicator => indicator.remove());
 
       // Add time indicator
       const timeIndicator = document.createElement('div');
@@ -452,6 +658,9 @@ class ThreadsDrafter {
 
       // Insert at the top of the draft element
       draft.element.insertBefore(timeIndicator, draft.element.firstChild);
+      
+      // Mark this element as processed to prevent future duplicates
+      draft.element.setAttribute('data-threads-drafter-time-added', 'true');
     });
   }
 
