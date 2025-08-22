@@ -226,7 +226,7 @@ class ThreadsDrafterBackground {
    */
   async handleTabUpdate(tabId, changeInfo, tab) {
     // Only process completed navigations to threads.com
-    if (changeInfo.status === 'complete' && tab.url && tab.url.includes('threads.net')) {
+    if (changeInfo.status === 'complete' && tab.url && tab.url.includes('threads.com')) {
       console.log('[Threads Drafter] Threads.com tab detected:', tabId);
 
       try {
@@ -375,7 +375,7 @@ class ThreadsDrafterBackground {
    */
   async broadcastSettingsUpdate(changes) {
     try {
-      const tabs = await chrome.tabs.query({ url: '*://*.threads.net/*' });
+      const tabs = await chrome.tabs.query({ url: '*://*.threads.com/*' });
 
       for (const tab of tabs) {
         try {

@@ -10,12 +10,12 @@
   ],
   
   "host_permissions": [
-    "https://*.threads.net/*"
+    "https://*.threads.com/*"
   ],
   
   "content_scripts": [
     {
-      "matches": ["https://*.threads.net/*"],
+      "matches": ["https://*.threads.com/*"],
       "js": ["content/content.js"],
       "css": ["content/content.css"],
       "run_at": "document_idle"
@@ -47,7 +47,7 @@
   "web_accessible_resources": [
     {
       "resources": ["content/*"],
-      "matches": ["https://*.threads.net/*"]
+      "matches": ["https://*.threads.com/*"]
     }
   ]
 }

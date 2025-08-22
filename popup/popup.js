@@ -221,7 +221,7 @@ class ThreadsDrafterPopup {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       
-      if (!tab || !tab.url.includes('threads.net')) {
+      if (!tab || !tab.url.includes('threads.com')) {
         this.showThreadsNotActiveMessage();
         return;
       }
@@ -280,7 +280,7 @@ class ThreadsDrafterPopup {
     // Send message to content script
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url.includes('threads.net')) {
+      if (tab && tab.url.includes('threads.com')) {
         await chrome.tabs.sendMessage(tab.id, {
           action: 'toggleExtension',
           enabled: enabled
@@ -303,7 +303,7 @@ class ThreadsDrafterPopup {
     // Send message to content script
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url.includes('threads.net')) {
+      if (tab && tab.url.includes('threads.com')) {
         await chrome.tabs.sendMessage(tab.id, {
           action: 'changeSortOrder',
           sortOrder: order
@@ -352,7 +352,7 @@ class ThreadsDrafterPopup {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       
-      if (!tab || !tab.url.includes('threads.net')) {
+      if (!tab || !tab.url.includes('threads.com')) {
         this.showError('Please navigate to Threads.com first');
         return;
       }
@@ -374,7 +374,7 @@ class ThreadsDrafterPopup {
   async handleOpenThreads() {
     try {
       await chrome.tabs.create({
-        url: 'https://www.threads.net'
+        url: 'https://www.threads.com'
       });
       window.close();
     } catch (error) {
@@ -390,7 +390,7 @@ class ThreadsDrafterPopup {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       
-      if (!tab || !tab.url.includes('threads.net')) {
+      if (!tab || !tab.url.includes('threads.com')) {
         this.showThreadsNotActiveMessage();
       }
     } catch (error) {

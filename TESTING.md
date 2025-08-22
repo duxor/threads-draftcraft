@@ -34,7 +34,7 @@ This document provides a comprehensive overview of the extension's implementatio
 ✓ Name: Threads Drafter
 ✓ Version: 1.0.0
 ✓ Permissions: 2 defined (storage, activeTab)
-✓ Host Permissions: threads.net configured
+✓ Host Permissions: threads.com configured
 ✓ Content Scripts: 1 defined
 ✓ Background Script: Service worker configured
 ✓ Action Popup: Properly defined
