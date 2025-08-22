@@ -295,7 +295,8 @@ class ThreadsDrafterBackground {
         sortOrder: 'earliest',
         autoSort: true,
         showTimeIndicators: true,
-        showDraftCount: true
+        showDraftCount: true,
+        showSortIndicator: true
       });
 
       return result;
