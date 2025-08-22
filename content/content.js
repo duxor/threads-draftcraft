@@ -6,11 +6,11 @@
 class ThreadsDrafter {
   constructor() {
     this.drafts = [];
-    this.isExtensionEnabled = true;
     this.sortOrder = 'earliest'; // 'earliest' or 'latest'
     this.autoSort = true;
     this.showTimeIndicators = true;
     this.showDraftCount = true;
+    this.showSortIndicator = true;
     
     // Initialize the extension
     this.init();
@@ -38,18 +38,17 @@ class ThreadsDrafter {
   async loadSettings() {
     try {
       const result = await chrome.storage.sync.get({
-        isEnabled: true,
         sortOrder: 'earliest',
         autoSort: true,
         showTimeIndicators: true,
-        showDraftCount: true
+        showDraftCount: true,
+        showSortIndicator: true
       });
-      
-      this.isExtensionEnabled = result.isEnabled;
       this.sortOrder = result.sortOrder;
       this.autoSort = result.autoSort;
       this.showTimeIndicators = result.showTimeIndicators;
       this.showDraftCount = result.showDraftCount;
+      this.showSortIndicator = result.showSortIndicator;
     } catch (error) {
       console.warn('[Threads Drafter] Could not load settings:', error);
     }
@@ -60,21 +59,21 @@ class ThreadsDrafter {
    */
   setupMessageListener() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (message.action === 'toggleExtension') {
-        this.isExtensionEnabled = message.enabled;
-        this.processDrafts(null, true); // Force reprocessing
-      } else if (message.action === 'changeSortOrder') {
+      if (message.action === 'changeSortOrder') {
         this.sortOrder = message.sortOrder;
         this.processDrafts(null, true); // Force reprocessing
       } else if (message.action === 'toggleAutoSort') {
         this.autoSort = message.enabled;
-        // Auto sort doesn't need immediate reprocessing since it only affects future dialog opens
+        this.processDrafts(null, true); // Force reprocessing to apply/remove sorting immediately
       } else if (message.action === 'toggleTimeIndicators') {
         this.showTimeIndicators = message.enabled;
         this.processDrafts(null, true); // Force reprocessing to show/hide time indicators
       } else if (message.action === 'toggleDraftCount') {
         this.showDraftCount = message.enabled;
         this.processDrafts(null, true); // Force reprocessing to show/hide draft count
+      } else if (message.action === 'toggleSortIndicator') {
+        this.showSortIndicator = message.enabled;
+        this.processDrafts(null, true); // Force reprocessing to show/hide sort indicator
       } else if (message.action === 'getDraftStats') {
         sendResponse({
           totalDrafts: this.drafts.length,
@@ -233,12 +232,30 @@ class ThreadsDrafter {
   }
 
   /**
+   * Restore original order of draft elements
+   */
+  restoreOriginalOrder(dialogElement) {
+    if (this.drafts.length === 0) return;
+
+    // Find the container that holds all drafts
+    const container = this.drafts[0].element.parentElement;
+    if (!container) return;
+
+    // Sort drafts by their original order
+    const originalDrafts = [...this.drafts].sort((a, b) => a.originalOrder - b.originalOrder);
+    
+    // Restore elements to original DOM order
+    originalDrafts.forEach((draft) => {
+      container.appendChild(draft.element);
+    });
+    
+    console.log('[Threads Drafter] Restored original draft order');
+  }
+
+  /**
    * Process drafts in the dialog
    */
   processDrafts(dialogElement = null, force = false) {
-    if (!this.isExtensionEnabled) {
-      return;
-    }
 
     // Find the dialog element if not provided
     if (!dialogElement) {
@@ -625,6 +642,11 @@ class ThreadsDrafter {
     const existingStatus = draftsHeader.querySelector('.threads-drafter-status');
     if (existingStatus) existingStatus.remove();
 
+    // Skip adding sort indicator if disabled
+    if (!this.showSortIndicator) {
+      return;
+    }
+
     // Create compact status indicator to integrate into header
     const statusIndicator = document.createElement('span');
     statusIndicator.className = 'threads-drafter-status';
@@ -638,10 +660,10 @@ class ThreadsDrafter {
         align-items: center;
         gap: 4px;
       ">
-        <svg width="8" height="8" viewBox="0 0 8 8" style="display: inline-block; margin-right: 2px;">
-          <path d="M4 6L1 3h6z" fill="#4CAF50"/>
+        <svg width="12" height="12" viewBox="0 0 12 12" style="display: inline-block; margin-right: 2px;">
+          <path d="M6 2L6 10M3 7L6 10L9 7" stroke="#4CAF50" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        ${this.sortOrder} first
+        ${this.sortOrder === 'earliest' ? 'Earliest' : 'Latest'} First
       </span>
     `;
 

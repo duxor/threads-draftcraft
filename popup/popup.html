@@ -16,17 +16,6 @@
         <div class="version">v1.0.0</div>
     </div>
 
-    <!-- Status Indicator -->
-    <div class="status-section">
-        <div class="status-item" id="extensionStatus">
-            <div class="status-icon active" id="statusIcon"></div>
-            <span class="status-text" id="statusText">Extension Active</span>
-            <label class="toggle-switch">
-                <input type="checkbox" id="extensionToggle" checked>
-                <span class="toggle-slider"></span>
-            </label>
-        </div>
-    </div>
 
     <!-- Draft Statistics -->
     <div class="stats-section">
@@ -72,10 +61,10 @@
         <div class="setting-item">
             <div class="setting-info">
                 <div class="setting-label">Auto Sort</div>
-                <div class="setting-description">Automatically sort when drafts dialog opens</div>
+                <div class="setting-description">Automatically sort when drafts dialog opens (always enabled)</div>
             </div>
             <label class="toggle-switch">
-                <input type="checkbox" id="autoSort" checked>
+                <input type="checkbox" id="autoSort" checked disabled>
                 <span class="toggle-slider"></span>
             </label>
         </div>
@@ -98,6 +87,17 @@
             </div>
             <label class="toggle-switch">
                 <input type="checkbox" id="showDraftCount" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-info">
+                <div class="setting-label">Show Sort Indicator</div>
+                <div class="setting-description">Display sort order indicator in drafts header</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showSortIndicator" checked>
                 <span class="toggle-slider"></span>
             </label>
         </div>

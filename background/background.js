@@ -74,7 +74,6 @@ class ThreadsDrafterBackground {
    */
   async initializeDefaultSettings() {
     const defaultSettings = {
-      isEnabled: true,
       sortOrder: 'earliest',
       autoSort: true,
       showTimeIndicators: true,
@@ -283,11 +282,6 @@ class ThreadsDrafterBackground {
   handleStorageChange(changes, areaName) {
     console.log('[Threads Drafter] Storage changed:', changes, 'in area:', areaName);
 
-    // Update badge if extension state changes
-    if (changes.isEnabled) {
-      this.updateBadge();
-    }
-
     // Broadcast settings changes to all tabs
     this.broadcastSettingsUpdate(changes);
   }
@@ -298,7 +292,6 @@ class ThreadsDrafterBackground {
   async getSettings() {
     try {
       const result = await chrome.storage.sync.get({
-        isEnabled: true,
         sortOrder: 'earliest',
         autoSort: true,
         showTimeIndicators: true,
@@ -350,13 +343,7 @@ class ThreadsDrafterBackground {
    */
   async updateBadge(count = null) {
     try {
-      const settings = await this.getSettings();
-
-      if (!settings.isEnabled) {
-        await chrome.action.setBadgeText({ text: '○' });
-        await chrome.action.setBadgeBackgroundColor({ color: '#ccc' });
-        await chrome.action.setTitle({ title: 'Threads Drafter - Disabled' });
-      } else if (count !== null) {
+      if (count !== null) {
         await chrome.action.setBadgeText({ text: count.toString() });
         await chrome.action.setBadgeBackgroundColor({ color: '#1DA1F2' });
         await chrome.action.setTitle({ title: `Threads Drafter - ${count} drafts found` });

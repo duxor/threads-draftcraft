@@ -6,11 +6,11 @@
 class ThreadsDrafterPopup {
   constructor() {
     this.settings = {
-      isEnabled: true,
       sortOrder: 'earliest',
       autoSort: true,
       showTimeIndicators: true,
-      showDraftCount: true
+      showDraftCount: true,
+      showSortIndicator: true
     };
 
     this.init();
@@ -44,11 +44,11 @@ class ThreadsDrafterPopup {
   async loadSettings() {
     try {
       const result = await chrome.storage.sync.get({
-        isEnabled: true,
         sortOrder: 'earliest',
         autoSort: true,
         showTimeIndicators: true,
-        showDraftCount: true
+        showDraftCount: true,
+        showSortIndicator: true
       });
 
       this.settings = { ...this.settings, ...result };
@@ -75,13 +75,6 @@ class ThreadsDrafterPopup {
    * Setup event listeners for UI elements
    */
   setupEventListeners() {
-    // Extension toggle
-    const extensionToggle = document.getElementById('extensionToggle');
-    if (extensionToggle) {
-      extensionToggle.addEventListener('change', (e) => {
-        this.handleExtensionToggle(e.target.checked);
-      });
-    }
 
     // Sort order dropdown
     const sortOrder = document.getElementById('sortOrder');
@@ -112,6 +105,14 @@ class ThreadsDrafterPopup {
     if (showDraftCount) {
       showDraftCount.addEventListener('change', (e) => {
         this.handleDraftCountToggle(e.target.checked);
+      });
+    }
+
+    // Show sort indicator toggle
+    const showSortIndicator = document.getElementById('showSortIndicator');
+    if (showSortIndicator) {
+      showSortIndicator.addEventListener('change', (e) => {
+        this.handleSortIndicatorToggle(e.target.checked);
       });
     }
 
@@ -175,23 +176,6 @@ class ThreadsDrafterPopup {
    * Update UI elements with current settings
    */
   updateUI() {
-    // Extension status
-    const statusIcon = document.getElementById('statusIcon');
-    const statusText = document.getElementById('statusText');
-    const extensionToggle = document.getElementById('extensionToggle');
-
-    if (statusIcon && statusText && extensionToggle) {
-      if (this.settings.isEnabled) {
-        statusIcon.className = 'status-icon active';
-        statusText.textContent = 'Extension Active';
-        extensionToggle.checked = true;
-      } else {
-        statusIcon.className = 'status-icon inactive';
-        statusText.textContent = 'Extension Inactive';
-        extensionToggle.checked = false;
-      }
-    }
-
     // Settings
     const sortOrder = document.getElementById('sortOrder');
     if (sortOrder) {
@@ -211,6 +195,11 @@ class ThreadsDrafterPopup {
     const showDraftCount = document.getElementById('showDraftCount');
     if (showDraftCount) {
       showDraftCount.checked = this.settings.showDraftCount;
+    }
+
+    const showSortIndicator = document.getElementById('showSortIndicator');
+    if (showSortIndicator) {
+      showSortIndicator.checked = this.settings.showSortIndicator;
     }
   }
 
@@ -269,29 +258,6 @@ class ThreadsDrafterPopup {
     }
   }
 
-  /**
-   * Handle extension toggle
-   */
-  async handleExtensionToggle(enabled) {
-    this.settings.isEnabled = enabled;
-    await this.saveSettings();
-    this.updateUI();
-
-    // Send message to content script
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url.includes('threads.com')) {
-        await chrome.tabs.sendMessage(tab.id, {
-          action: 'toggleExtension',
-          enabled: enabled
-        });
-      }
-    } catch (error) {
-      console.error('[Threads Drafter] Failed to toggle extension:', error);
-    }
-
-    this.showSuccess(enabled ? 'Extension enabled' : 'Extension disabled');
-  }
 
   /**
    * Handle sort order change
@@ -383,6 +349,29 @@ class ThreadsDrafterPopup {
     }
 
     this.showSuccess(enabled ? 'Draft count enabled' : 'Draft count disabled');
+  }
+
+  /**
+   * Handle sort indicator toggle
+   */
+  async handleSortIndicatorToggle(enabled) {
+    this.settings.showSortIndicator = enabled;
+    await this.saveSettings();
+
+    // Send message to content script
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url.includes('threads.com')) {
+        await chrome.tabs.sendMessage(tab.id, {
+          action: 'toggleSortIndicator',
+          enabled: enabled
+        });
+      }
+    } catch (error) {
+      console.error('[Threads Drafter] Failed to toggle sort indicator:', error);
+    }
+
+    this.showSuccess(enabled ? 'Sort indicator enabled' : 'Sort indicator disabled');
   }
 
   /**
