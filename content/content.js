@@ -20,7 +20,7 @@ class ThreadsDrafter {
    * Initialize the extension
    */
   async init() {
-    console.log('[Threads Drafter] Extension initialized');
+    // console.log('[Threads Drafter] Extension initialized');
     
     // Load settings from storage
     await this.loadSettings();
@@ -113,7 +113,7 @@ class ThreadsDrafter {
             }
             
             if (this.isDraftsDialog(dialog)) {
-              console.log('[Threads Drafter] Drafts dialog detected');
+              // console.log('[Threads Drafter] Drafts dialog detected');
               this.processDrafts(dialog);
             }
           });
@@ -143,7 +143,7 @@ class ThreadsDrafter {
       }
       
       if (this.isDraftsDialog(dialog)) {
-        console.log('[Threads Drafter] Existing drafts dialog found');
+        // console.log('[Threads Drafter] Existing drafts dialog found');
         this.processDrafts(dialog);
       }
     });
@@ -171,7 +171,7 @@ class ThreadsDrafter {
     
     for (const indicator of editIndicators) {
       if (textContent.includes(indicator)) {
-        console.log('[Threads Drafter] Edit dialog detected, ignoring:', indicator);
+        // console.log('[Threads Drafter] Edit dialog detected, ignoring:', indicator);
         return false;
       }
     }
@@ -201,9 +201,9 @@ class ThreadsDrafter {
     // Only return true if we have clear drafts indicators and no edit indicators
     const isDrafts = hasDraftsText && (hasDraftsIndicator || hasMultipleScheduledPosts);
     
-    if (isDrafts) {
-      console.log('[Threads Drafter] Confirmed drafts dialog with indicators');
-    }
+    // if (isDrafts) {
+    //   console.log('[Threads Drafter] Confirmed drafts dialog with indicators');
+    // }
     
     return isDrafts;
   }
@@ -228,7 +228,7 @@ class ThreadsDrafter {
     const processedElements = dialogElement.querySelectorAll('[data-threads-drafter-time-added]');
     processedElements.forEach(element => element.removeAttribute('data-threads-drafter-time-added'));
     
-    console.log('[Threads Drafter] Removed existing enhancements for reprocessing');
+    // console.log('[Threads Drafter] Removed existing enhancements for reprocessing');
   }
 
   /**
@@ -249,7 +249,7 @@ class ThreadsDrafter {
       container.appendChild(draft.element);
     });
     
-    console.log('[Threads Drafter] Restored original draft order');
+    // console.log('[Threads Drafter] Restored original draft order');
   }
 
   /**
@@ -321,7 +321,7 @@ class ThreadsDrafter {
       }
     });
 
-    console.log(`[Threads Drafter] Found ${this.drafts.length} drafts`);
+    // console.log(`[Threads Drafter] Found ${this.drafts.length} drafts`);
   }
 
   /**
@@ -340,10 +340,9 @@ class ThreadsDrafter {
     for (let selector of specificSelectors) {
       const elements = dialogElement.querySelectorAll(selector);
       if (elements.length > 0) {
-        // Filter to only include elements that actually contain draft content
+        // Enhanced filtering: check if element contains any scheduleable content
         const validDrafts = Array.from(elements).filter(element => {
-          const text = element.textContent.toLowerCase();
-          return text.includes('posting') && (text.includes('today') || text.includes('tomorrow') || text.includes('at'));
+          return this.hasScheduleableContent(element);
         });
         if (validDrafts.length > 0) {
           draftElements.push(...validDrafts);
@@ -360,12 +359,8 @@ class ThreadsDrafter {
       allDivs.forEach(div => {
         const text = div.textContent.trim();
         
-        // Look for elements that contain actual scheduling information
-        if (text.length > 20 && text.length < 500 && 
-            (text.includes('Posting today at') || 
-             text.includes('Posting tomorrow at') || 
-             text.includes('Posting in'))) {
-          
+        // Enhanced detection: look for any scheduleable content
+        if (text.length > 20 && text.length < 500 && this.hasScheduleableContent(div)) {
           // Make sure this isn't a child of an already found element
           let isChild = false;
           for (let found of foundDrafts) {
@@ -399,8 +394,99 @@ class ThreadsDrafter {
       }
     });
 
-    console.log(`[Threads Drafter] Selected ${filteredElements.length} draft elements from ${draftElements.length} candidates`);
+    // console.log(`[Threads Drafter] Selected ${filteredElements.length} draft elements from ${draftElements.length} candidates`);
     return filteredElements;
+  }
+
+  /**
+   * Check if an element contains content that can be scheduled
+   * Uses the same comprehensive logic as extractScheduledTime
+   */
+  hasScheduleableContent(element) {
+    const text = element.textContent.toLowerCase().trim();
+    
+    if (!text || text.length < 5) {
+      return false;
+    }
+    
+    // Define day names for matching
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayPattern = dayNames.join('|');
+    
+    // Check for explicit time patterns (same as extractScheduledTime)
+    const timePatterns = [
+      // Match "today/tomorrow/dayname at HH:MM AM/PM" with optional timezone
+      new RegExp(`(?:posting\\s+)?(?:today|tomorrow|${dayPattern})\\s+at\\s+\\d{1,2}:\\d{2}\\s*(?:am|pm|AM|PM)(?:\\s+[A-Z]{3}[+-]?\\d{1,2})?`, 'i'),
+      // Fallback for just the time with optional timezone
+      /\d{1,2}:\d{2}\s*(?:am|pm|AM|PM)(?:\s+[A-Z]{3}[+-]?\d{1,2})?/i
+    ];
+    
+    // Check for explicit time patterns
+    for (const pattern of timePatterns) {
+      if (pattern.test(text)) {
+        return true;
+      }
+    }
+    
+    // Check for day name patterns (enhanced from extractScheduledTime)
+    for (const dayName of dayNames) {
+      const dayPatterns = [
+        `posting ${dayName}`,
+        `${dayName} at`,
+        `${dayName} review`,
+        `${dayName} meeting`,
+        `${dayName} motivation`,
+        `${dayName} planning`,
+        `${dayName} session`,
+        `${dayName} post`,
+        `${dayName} is`,
+        `${dayName} will`,
+        `${dayName}!`,
+        // Also check for day names at the beginning of sentences or after punctuation
+        new RegExp(`(^|\\.|!|\\?)\\s*${dayName}\\b`, 'i')
+      ];
+      
+      for (const pattern of dayPatterns) {
+        if (typeof pattern === 'string') {
+          if (text.includes(pattern)) {
+            return true;
+          }
+        } else {
+          // Handle regex patterns
+          if (pattern.test(text)) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    // Check for other scheduling indicators
+    const schedulingIndicators = [
+      'posting today',
+      'today at',
+      'posting tomorrow',
+      'tomorrow at',
+      'posting in',
+      /in \d+ hours?/,
+      /in \d+ days?/,
+      /\btoday\b/,
+      /\btomorrow\b/
+    ];
+    
+    for (const indicator of schedulingIndicators) {
+      if (typeof indicator === 'string') {
+        if (text.includes(indicator)) {
+          return true;
+        }
+      } else {
+        // Handle regex patterns
+        if (indicator.test(text)) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
   }
 
   /**
@@ -464,18 +550,31 @@ class ThreadsDrafter {
     const textContent = originalText.toLowerCase();
     
     // Try to extract actual time strings from Threads.com draft content
-    // Look for patterns like "today at 2:14 pm", "tomorrow at 12:36 PM", etc.
+    // Look for patterns like "today at 2:14 pm", "tomorrow at 12:36 PM", "Sunday at 3:00 PM", etc.
     
-    // Pattern to match times: "today/tomorrow at HH:MM AM/PM"
+    // Define day names for matching
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayPattern = dayNames.join('|');
+    
+    // Enhanced patterns to match times with day names and optional timezone info
     const timePatterns = [
-      /(?:posting\s+)?(?:today|tomorrow)\s+at\s+(\d{1,2}):(\d{2})\s*(am|pm)/i,
-      /(\d{1,2}):(\d{2})\s*(am|pm)/i // Fallback for just the time
+      // Match "today/tomorrow/dayname at HH:MM AM/PM" with optional timezone (case-insensitive)
+      new RegExp(`(?:posting\\s+)?(?:today|tomorrow|${dayPattern})\\s+at\\s+(\\d{1,2}):(\\d{2})\\s*(am|pm|AM|PM)(?:\\s+[A-Z]{3}[+-]?\\d{1,2})?`, 'i'),
+      // Fallback for just the time with optional timezone (case-insensitive)
+      /(\d{1,2}):(\d{2})\s*(am|pm|AM|PM)(?:\s+[A-Z]{3}[+-]?\d{1,2})?/i
     ];
     
     let timeMatch = null;
+    let dayMatch = null;
+    
     for (const pattern of timePatterns) {
-      timeMatch = originalText.match(pattern);
-      if (timeMatch) break;
+      timeMatch = textContent.match(pattern);
+      if (timeMatch) {
+        // Also capture which day was mentioned
+        const dayRegex = new RegExp(`(today|tomorrow|${dayPattern})`, 'i');
+        dayMatch = textContent.match(dayRegex);
+        break;
+      }
     }
     
     if (timeMatch) {
@@ -491,27 +590,104 @@ class ThreadsDrafter {
         hour24 = 0;
       }
       
-      // Create date object for today or tomorrow
+      // Create date object
       const now = new Date();
       const scheduledDate = new Date(now);
       
-      // Determine if it's today or tomorrow
-      if (textContent.includes('tomorrow')) {
-        scheduledDate.setDate(now.getDate() + 1);
+      // Determine the target date based on day mentioned
+      if (dayMatch) {
+        const dayIndicator = dayMatch[1].toLowerCase();
+        
+        if (dayIndicator === 'today') {
+          // Keep current date
+        } else if (dayIndicator === 'tomorrow') {
+          scheduledDate.setDate(now.getDate() + 1);
+        } else if (dayNames.includes(dayIndicator)) {
+          // Handle specific day names
+          const targetDayIndex = dayNames.indexOf(dayIndicator);
+          const currentDayIndex = now.getDay();
+          
+          // Calculate days until target day
+          let daysUntil = targetDayIndex - currentDayIndex;
+          if (daysUntil < 0) {
+            daysUntil += 7; // Next week if day has passed
+          }
+          
+          scheduledDate.setDate(now.getDate() + daysUntil);
+        }
       }
       
       scheduledDate.setHours(hour24, minutes, 0, 0);
       
-      // If the time has already passed today, schedule for tomorrow
-      if (!textContent.includes('tomorrow') && scheduledDate <= now) {
+      // If the time has already passed today and no specific day was mentioned, schedule for tomorrow
+      if (!dayMatch && scheduledDate <= now) {
         scheduledDate.setDate(now.getDate() + 1);
       }
       
-      console.log(`[Threads Drafter] Parsed time from "${timeMatch[0]}" -> ${scheduledDate.toLocaleString()}`);
+      // console.log(`[Threads Drafter] Parsed time from "${timeMatch[0]}" (day: ${dayMatch ? dayMatch[1] : 'none'}) -> ${scheduledDate.toLocaleString()}`);
       return scheduledDate;
     }
     
     // Fallback patterns for relative time indicators
+    
+    // Check for specific day names without specific time (Sunday, Monday, etc.)
+    for (const dayName of dayNames) {
+      // More comprehensive pattern matching for day names
+      const dayPatterns = [
+        `posting ${dayName}`,
+        `${dayName} at`,
+        `${dayName} review`,
+        `${dayName} meeting`,
+        `${dayName} motivation`,
+        `${dayName} planning`,
+        `${dayName} session`,
+        `${dayName} post`,
+        `${dayName} is`,
+        `${dayName} will`,
+        `${dayName}!`,
+        // Also check for day names at the beginning of sentences or after punctuation
+        new RegExp(`(^|\\.|!|\\?)\\s*${dayName}\\b`, 'i')
+      ];
+      
+      let dayFound = false;
+      for (const pattern of dayPatterns) {
+        if (typeof pattern === 'string') {
+          if (textContent.includes(pattern)) {
+            dayFound = true;
+            break;
+          }
+        } else {
+          // Handle regex patterns
+          if (pattern.test(textContent)) {
+            dayFound = true;
+            break;
+          }
+        }
+      }
+      
+      if (dayFound) {
+        const now = new Date();
+        const scheduledDate = new Date(now);
+        
+        const targetDayIndex = dayNames.indexOf(dayName);
+        const currentDayIndex = now.getDay();
+        
+        // Calculate days until target day
+        let daysUntil = targetDayIndex - currentDayIndex;
+        if (daysUntil < 0) {
+          daysUntil += 7; // Next week if day has passed
+        }
+        
+        scheduledDate.setDate(now.getDate() + daysUntil);
+        // Set a random time during business hours for the day
+        const randomHour = Math.floor(Math.random() * 12) + 9; // 9 AM to 8 PM
+        const randomMinute = Math.floor(Math.random() * 60);
+        scheduledDate.setHours(randomHour, randomMinute, 0, 0);
+        
+        // console.log(`[Threads Drafter] Day fallback for "${dayName}" -> ${scheduledDate.toLocaleString()}`);
+        return scheduledDate;
+      }
+    }
     
     // Check for "today" indicators without specific time
     if (textContent.includes('posting today') || textContent.includes('today at')) {
@@ -555,7 +731,7 @@ class ThreadsDrafter {
       new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours from now (day after)
     ];
     
-    console.log(`[Threads Drafter] Using fallback time for index ${index}`);
+    // console.log(`[Threads Drafter] Using fallback time for index ${index}`);
     return mockTimes[index % mockTimes.length];
   }
 
@@ -634,7 +810,7 @@ class ThreadsDrafter {
     // Find the existing "Drafts" header
     const draftsHeader = dialogElement.querySelector('h1 span');
     if (!draftsHeader || !draftsHeader.textContent.includes('Drafts')) {
-      console.warn('[Threads Drafter] Could not find Drafts header for integration');
+      // console.warn('[Threads Drafter] Could not find Drafts header for integration');
       return;
     }
 
@@ -792,7 +968,7 @@ class ThreadsDrafter {
 
     // Verify we have the drafts header (already found above)
     if (!draftsHeader || !draftsHeader.textContent.includes('Drafts')) {
-      console.warn('[Threads Drafter] Could not find Drafts header for count integration');
+      // console.warn('[Threads Drafter] Could not find Drafts header for count integration');
       return;
     }
 
