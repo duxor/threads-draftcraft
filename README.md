@@ -148,6 +148,7 @@ threads-scheduler-extension/
 │   └── background.js      # Background script
 ├── icons/
 │   ├── icon16.png         # Extension icons
+│   ├── icon32.png
 │   ├── icon48.png
 │   └── icon128.png
 ├── dev-docs/
@@ -215,7 +216,8 @@ npm run build         # Build for production
 - [x] Comprehensive popup interface
 - [x] Background script coordination
 - [x] Settings management system
-- [ ] Chrome Web Store submission (pending icon creation)
+- [x] Icon creation and implementation
+- [ ] Chrome Web Store submission
 
 ### Version 1.1 (Enhanced Features)
 - [ ] Advanced sorting options
