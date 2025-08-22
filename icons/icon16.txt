@@ -1,0 +1,29 @@
+PLACEHOLDER ICON FILE - REPLACE WITH ACTUAL PNG
+==============================================
+
+File: icon16.png
+Size: 16x16 pixels
+Format: PNG
+Usage: Extension toolbar
+
+DESIGN SPECIFICATIONS:
+- Primary Color: #1DA1F2 (Threads blue)
+- Secondary Color: #4CAF50 (Success green)
+- Style: Modern, clean, minimalist
+- Elements: Document/draft symbol with time indicator
+
+DESIGN CONCEPT:
+A simple 16x16 pixel icon featuring:
+- Blue background (#1DA1F2)
+- White document/paper symbol in center
+- Small green clock or time indicator in corner
+- Clean, readable at small size
+
+INSTRUCTIONS FOR DEVELOPERS:
+1. Create actual PNG file using image editing software
+2. Name file exactly "icon16.png"
+3. Place in icons/ directory
+4. Test visibility at 16px size
+5. Ensure consistency with larger icon sizes
+
+STATUS: PLACEHOLDER - NEEDS REPLACEMENT WITH ACTUAL PNG FILE

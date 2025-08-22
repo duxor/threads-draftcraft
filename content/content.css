@@ -1,0 +1,384 @@
+/**
+ * Threads Drafter - Content Styles
+ * CSS styles for enhancing the drafts section UI
+ */
+
+/* Extension Indicator Styles */
+.threads-drafter-indicator {
+  position: relative;
+  z-index: 1000;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.threads-drafter-indicator > div {
+  animation: threads-drafter-fade-in 0.3s ease-in-out;
+  box-shadow: 0 2px 8px rgba(29, 161, 242, 0.2);
+  border: 1px solid rgba(29, 161, 242, 0.3);
+}
+
+/* Draft Count Indicator */
+.threads-drafter-count {
+  position: relative;
+  z-index: 999;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.threads-drafter-count > div {
+  animation: threads-drafter-slide-in 0.4s ease-out;
+  box-shadow: 0 1px 4px rgba(76, 175, 80, 0.2);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+/* Time Indicator Styles */
+.threads-drafter-time {
+  position: relative;
+  z-index: 998;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.threads-drafter-time > div {
+  animation: threads-drafter-slide-in-left 0.3s ease-out;
+  box-shadow: 0 1px 3px rgba(29, 161, 242, 0.15);
+  transition: all 0.2s ease;
+}
+
+.threads-drafter-time > div:hover {
+  background: rgba(29, 161, 242, 0.15) !important;
+  transform: translateX(2px);
+}
+
+/* Enhanced Draft Container Styles */
+[data-threads-drafter-enhanced] {
+  position: relative;
+}
+
+[data-threads-drafter-enhanced]::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(
+    to bottom,
+    #1DA1F2,
+    #1991DB,
+    #1580C4
+  );
+  border-radius: 0 2px 2px 0;
+  opacity: 0.8;
+}
+
+/* Draft Sorting Visual Feedback */
+.threads-drafter-sorting {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.threads-drafter-sorting.moving {
+  transform: scale(0.98);
+  opacity: 0.8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Improved Draft Visibility */
+.threads-drafter-draft-container {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  margin: 4px 0;
+}
+
+.threads-drafter-draft-container:hover {
+  background: rgba(29, 161, 242, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Priority Indicators */
+.threads-drafter-priority-high {
+  border-left: 4px solid #FF6B6B !important;
+}
+
+.threads-drafter-priority-high .threads-drafter-time > div {
+  background: rgba(255, 107, 107, 0.1) !important;
+  color: #D63384 !important;
+  border-left-color: #FF6B6B !important;
+}
+
+.threads-drafter-priority-medium {
+  border-left: 4px solid #FFB347 !important;
+}
+
+.threads-drafter-priority-medium .threads-drafter-time > div {
+  background: rgba(255, 179, 71, 0.1) !important;
+  color: #E67E00 !important;
+  border-left-color: #FFB347 !important;
+}
+
+.threads-drafter-priority-low {
+  border-left: 4px solid #4CAF50 !important;
+}
+
+.threads-drafter-priority-low .threads-drafter-time > div {
+  background: rgba(76, 175, 80, 0.1) !important;
+  color: #2E7D32 !important;
+  border-left-color: #4CAF50 !important;
+}
+
+/* Loading States */
+.threads-drafter-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.threads-drafter-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(29, 161, 242, 0.2),
+    transparent
+  );
+  animation: threads-drafter-shimmer 1.5s infinite;
+}
+
+/* Settings Panel Styles */
+.threads-drafter-settings {
+  background: white;
+  border: 1px solid #E1E8ED;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.threads-drafter-settings-title {
+  font-weight: 600;
+  color: #1DA1F2;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.threads-drafter-setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0;
+  font-size: 12px;
+}
+
+.threads-drafter-toggle {
+  width: 40px;
+  height: 20px;
+  background: #ccc;
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.threads-drafter-toggle.active {
+  background: #1DA1F2;
+}
+
+.threads-drafter-toggle::after {
+  content: '';
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.threads-drafter-toggle.active::after {
+  transform: translateX(20px);
+}
+
+/* Statistics Display */
+.threads-drafter-stats {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.threads-drafter-stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 2px 0;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .threads-drafter-indicator > div,
+  .threads-drafter-count > div,
+  .threads-drafter-settings {
+    background: #1a1a1a;
+    border-color: #333;
+    color: #fff;
+  }
+  
+  .threads-drafter-draft-container:hover {
+    background: rgba(29, 161, 242, 0.1);
+  }
+  
+  .threads-drafter-toggle {
+    background: #444;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .threads-drafter-indicator > div,
+  .threads-drafter-count > div,
+  .threads-drafter-time > div {
+    font-size: 11px;
+    padding: 6px 8px;
+    margin: 6px;
+  }
+  
+  .threads-drafter-settings {
+    padding: 10px;
+    margin: 6px;
+  }
+}
+
+/* Accessibility Improvements */
+.threads-drafter-indicator:focus,
+.threads-drafter-count:focus,
+.threads-drafter-time:focus {
+  outline: 2px solid #1DA1F2;
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: more) {
+  .threads-drafter-indicator > div {
+    border: 2px solid #1DA1F2;
+    background: #000;
+    color: #fff;
+  }
+  
+  .threads-drafter-time > div {
+    border: 2px solid #1DA1F2;
+    background: #fff;
+    color: #000;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .threads-drafter-indicator > div,
+  .threads-drafter-count > div,
+  .threads-drafter-time > div,
+  .threads-drafter-draft-container,
+  .threads-drafter-sorting {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Animation Keyframes */
+@keyframes threads-drafter-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes threads-drafter-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes threads-drafter-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes threads-drafter-shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes threads-drafter-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Utility Classes */
+.threads-drafter-hidden {
+  display: none !important;
+}
+
+.threads-drafter-fade-out {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.threads-drafter-no-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Error States */
+.threads-drafter-error {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin: 8px;
+  font-size: 12px;
+}
+
+/* Success States */
+.threads-drafter-success {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin: 8px;
+  font-size: 12px;
+}

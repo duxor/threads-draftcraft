@@ -1,0 +1,39 @@
+PLACEHOLDER ICON FILE - REPLACE WITH ACTUAL PNG
+==============================================
+
+File: icon48.png
+Size: 48x48 pixels
+Format: PNG
+Usage: Extension management page and installation dialog
+
+DESIGN SPECIFICATIONS:
+- Primary Color: #1DA1F2 (Threads blue)
+- Secondary Color: #4CAF50 (Success green)
+- Style: Modern, clean, minimalist
+- Elements: Document/draft symbol with time indicator
+
+DESIGN CONCEPT:
+A 48x48 pixel icon featuring:
+- Rich blue gradient background (#1DA1F2 with subtle depth)
+- Detailed white document/paper stack with visible pages
+- Prominent green clock/calendar with clear time markings
+- Sorting arrows or organizational lines
+- Text lines on document (subtle details)
+- Shadow effects for depth
+
+VISUAL ELEMENTS:
+- Main document: Clean white paper with subtle shadow
+- Time indicator: Green circular clock or calendar square
+- Organization hint: Small arrows showing sorted order
+- Background: Professional blue gradient
+- High contrast for installation dialog visibility
+
+INSTRUCTIONS FOR DEVELOPERS:
+1. Create actual PNG file using image editing software
+2. Name file exactly "icon48.png"
+3. Place in icons/ directory
+4. Include rich details suitable for installation dialogs
+5. Ensure high contrast and professional appearance
+6. Test visibility on various background colors
+
+STATUS: PLACEHOLDER - NEEDS REPLACEMENT WITH ACTUAL PNG FILE

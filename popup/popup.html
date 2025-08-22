@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threads Drafter</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <span class="icon">📝</span>
+            <h1>Threads Drafter</h1>
+        </div>
+        <div class="version">v1.0.0</div>
+    </div>
+
+    <!-- Status Indicator -->
+    <div class="status-section">
+        <div class="status-item" id="extensionStatus">
+            <div class="status-icon active" id="statusIcon"></div>
+            <span class="status-text" id="statusText">Extension Active</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="extensionToggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Draft Statistics -->
+    <div class="stats-section">
+        <h2>📊 Draft Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number" id="totalDrafts">-</div>
+                <div class="stat-label">Total Drafts</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="scheduledDrafts">-</div>
+                <div class="stat-label">Scheduled</div>
+            </div>
+        </div>
+        
+        <div class="next-scheduled" id="nextScheduledContainer" style="display: none;">
+            <div class="next-scheduled-header">
+                <span class="icon">⏰</span>
+                <span>Next Scheduled</span>
+            </div>
+            <div class="next-scheduled-content">
+                <div class="next-draft-text" id="nextDraftText">Loading...</div>
+                <div class="next-draft-time" id="nextDraftTime">-</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="settings-section">
+        <h2>⚙️ Settings</h2>
+        
+        <div class="setting-item">
+            <div class="setting-info">
+                <div class="setting-label">Sort Order</div>
+                <div class="setting-description">How to sort scheduled drafts</div>
+            </div>
+            <select id="sortOrder" class="setting-select">
+                <option value="earliest">Earliest First</option>
+                <option value="latest">Latest First</option>
+            </select>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-info">
+                <div class="setting-label">Auto Sort</div>
+                <div class="setting-description">Automatically sort when drafts dialog opens</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="autoSort" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-info">
+                <div class="setting-label">Show Time Indicators</div>
+                <div class="setting-description">Display scheduled time on each draft</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showTimeIndicators" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-info">
+                <div class="setting-label">Show Draft Count</div>
+                <div class="setting-description">Display total number of drafts</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showDraftCount" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-section">
+        <h2>🔧 Actions</h2>
+        
+        <button class="action-button primary" id="refreshDrafts">
+            <span class="icon">🔄</span>
+            Refresh Drafts
+        </button>
+        
+        <button class="action-button secondary" id="openThreads">
+            <span class="icon">🌐</span>
+            Open Threads.com
+        </button>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-links">
+            <a href="#" id="helpLink">Help</a>
+            <span class="separator">•</span>
+            <a href="#" id="feedbackLink">Feedback</a>
+            <span class="separator">•</span>
+            <a href="#" id="githubLink">GitHub</a>
+        </div>
+        <div class="footer-text">
+            Made with ❤️ for Threads users
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading drafts...</div>
+    </div>
+
+    <!-- Error Message -->
+    <div class="error-message" id="errorMessage" style="display: none;">
+        <div class="error-icon">⚠️</div>
+        <div class="error-text" id="errorText"></div>
+        <button class="error-close" id="errorClose">×</button>
+    </div>
+
+    <!-- Success Message -->
+    <div class="success-message" id="successMessage" style="display: none;">
+        <div class="success-icon">✅</div>
+        <div class="success-text" id="successText"></div>
+        <button class="success-close" id="successClose">×</button>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

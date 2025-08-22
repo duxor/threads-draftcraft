@@ -1,0 +1,30 @@
+PLACEHOLDER ICON FILE - REPLACE WITH ACTUAL PNG
+==============================================
+
+File: icon32.png
+Size: 32x32 pixels
+Format: PNG
+Usage: Extension management page
+
+DESIGN SPECIFICATIONS:
+- Primary Color: #1DA1F2 (Threads blue)
+- Secondary Color: #4CAF50 (Success green)
+- Style: Modern, clean, minimalist
+- Elements: Document/draft symbol with time indicator
+
+DESIGN CONCEPT:
+A 32x32 pixel icon featuring:
+- Blue gradient background (#1DA1F2 to lighter shade)
+- White document/paper symbol with visible details
+- Green clock/time indicator with clear hands
+- Optional: Small sorting arrows or lines
+- More detail than 16px version
+
+INSTRUCTIONS FOR DEVELOPERS:
+1. Create actual PNG file using image editing software
+2. Name file exactly "icon32.png"
+3. Place in icons/ directory
+4. Include more detail than 16px version
+5. Maintain visual consistency with other sizes
+
+STATUS: PLACEHOLDER - NEEDS REPLACEMENT WITH ACTUAL PNG FILE
