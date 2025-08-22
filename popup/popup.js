@@ -322,6 +322,20 @@ class ThreadsDrafterPopup {
   async handleAutoSortToggle(enabled) {
     this.settings.autoSort = enabled;
     await this.saveSettings();
+
+    // Send message to content script
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url.includes('threads.com')) {
+        await chrome.tabs.sendMessage(tab.id, {
+          action: 'toggleAutoSort',
+          enabled: enabled
+        });
+      }
+    } catch (error) {
+      console.error('[Threads Drafter] Failed to toggle auto sort:', error);
+    }
+
     this.showSuccess(enabled ? 'Auto sort enabled' : 'Auto sort disabled');
   }
 
@@ -331,6 +345,20 @@ class ThreadsDrafterPopup {
   async handleTimeIndicatorsToggle(enabled) {
     this.settings.showTimeIndicators = enabled;
     await this.saveSettings();
+
+    // Send message to content script
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url.includes('threads.com')) {
+        await chrome.tabs.sendMessage(tab.id, {
+          action: 'toggleTimeIndicators',
+          enabled: enabled
+        });
+      }
+    } catch (error) {
+      console.error('[Threads Drafter] Failed to toggle time indicators:', error);
+    }
+
     this.showSuccess(enabled ? 'Time indicators enabled' : 'Time indicators disabled');
   }
 
@@ -340,6 +368,20 @@ class ThreadsDrafterPopup {
   async handleDraftCountToggle(enabled) {
     this.settings.showDraftCount = enabled;
     await this.saveSettings();
+
+    // Send message to content script
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url.includes('threads.com')) {
+        await chrome.tabs.sendMessage(tab.id, {
+          action: 'toggleDraftCount',
+          enabled: enabled
+        });
+      }
+    } catch (error) {
+      console.error('[Threads Drafter] Failed to toggle draft count:', error);
+    }
+
     this.showSuccess(enabled ? 'Draft count enabled' : 'Draft count disabled');
   }
 
