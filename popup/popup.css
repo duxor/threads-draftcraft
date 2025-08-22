@@ -542,6 +542,13 @@ body::-webkit-scrollbar-thumb:hover {
     color: #e1e1e1;
   }
   
+  /* Specific section heading overrides for dark mode */
+  .stats-section h2,
+  .settings-section h2,
+  .actions-section h2 {
+    color: #e1e1e1;
+  }
+  
   /* Settings section elements */
   .setting-label {
     color: #e1e1e1;
