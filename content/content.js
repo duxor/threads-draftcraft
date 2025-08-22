@@ -534,7 +534,7 @@ class ThreadsDrafter {
     const days = Math.floor(hours / 24);
 
     if (days > 0) {
-      return `in ${days} day${days > 1 ? 's' : ''}`;
+      return `in ${days} day${days > 1 ? 's' : ''} - ${hours} hours`;
     } else if (hours > 0) {
       return `in ${hours} hour${hours > 1 ? 's' : ''}`;
     } else {
