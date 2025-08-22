@@ -8,6 +8,9 @@ class ThreadsDrafter {
     this.drafts = [];
     this.isExtensionEnabled = true;
     this.sortOrder = 'earliest'; // 'earliest' or 'latest'
+    this.autoSort = true;
+    this.showTimeIndicators = true;
+    this.showDraftCount = true;
     
     // Initialize the extension
     this.init();
@@ -36,11 +39,17 @@ class ThreadsDrafter {
     try {
       const result = await chrome.storage.sync.get({
         isEnabled: true,
-        sortOrder: 'earliest'
+        sortOrder: 'earliest',
+        autoSort: true,
+        showTimeIndicators: true,
+        showDraftCount: true
       });
       
       this.isExtensionEnabled = result.isEnabled;
       this.sortOrder = result.sortOrder;
+      this.autoSort = result.autoSort;
+      this.showTimeIndicators = result.showTimeIndicators;
+      this.showDraftCount = result.showDraftCount;
     } catch (error) {
       console.warn('[Threads Drafter] Could not load settings:', error);
     }
@@ -57,6 +66,15 @@ class ThreadsDrafter {
       } else if (message.action === 'changeSortOrder') {
         this.sortOrder = message.sortOrder;
         this.processDrafts(null, true); // Force reprocessing
+      } else if (message.action === 'toggleAutoSort') {
+        this.autoSort = message.enabled;
+        // Auto sort doesn't need immediate reprocessing since it only affects future dialog opens
+      } else if (message.action === 'toggleTimeIndicators') {
+        this.showTimeIndicators = message.enabled;
+        this.processDrafts(null, true); // Force reprocessing to show/hide time indicators
+      } else if (message.action === 'toggleDraftCount') {
+        this.showDraftCount = message.enabled;
+        this.processDrafts(null, true); // Force reprocessing to show/hide draft count
       } else if (message.action === 'getDraftStats') {
         sendResponse({
           totalDrafts: this.drafts.length,
@@ -243,8 +261,10 @@ class ThreadsDrafter {
     // Extract drafts from the dialog
     this.extractDrafts(dialogElement);
 
-    // Sort drafts
-    this.sortDrafts();
+    // Sort drafts only if auto sort is enabled
+    if (this.autoSort) {
+      this.sortDrafts();
+    }
 
     // Apply improvements to the UI
     this.enhanceUI(dialogElement);
@@ -534,7 +554,7 @@ class ThreadsDrafter {
     const days = Math.floor(hours / 24);
 
     if (days > 0) {
-      return `in ${days} day${days > 1 ? 's' : ''} - ${hours}h`;
+      return `in ${days} day${days > 1 ? 's' : ''} - ${hours} hour${hours > 1 ? 's' : ''}`;
     } else if (hours > 0) {
       return `in ${hours} hour${hours > 1 ? 's' : ''}`;
     } else {
@@ -649,14 +669,25 @@ class ThreadsDrafter {
    * Add time indicators to each draft (integrated into existing "Posting" sections)
    */
   addTimeIndicators() {
-    this.drafts.forEach((draft) => {
-      // Skip if this element already has been processed (additional safety check)
-      if (draft.element.hasAttribute('data-threads-drafter-time-added')) {
-        return;
-      }
+    if (!this.showTimeIndicators) {
+      // If time indicators are disabled, remove any existing ones
+      this.drafts.forEach((draft) => {
+        const existingIndicators = draft.element.querySelectorAll('.threads-drafter-time, .threads-drafter-time-subtle');
+        existingIndicators.forEach(indicator => indicator.remove());
+        
+        // Also remove integrated time info
+        const existingTimeInfo = draft.element.querySelector('.threads-drafter-time-info');
+        if (existingTimeInfo) existingTimeInfo.remove();
+        
+        // Remove processed flag so it can be re-processed later
+        draft.element.removeAttribute('data-threads-drafter-time-added');
+      });
+      return;
+    }
 
-      // Remove any existing separate time indicators (both our own and any duplicates)
-      const existingIndicators = draft.element.querySelectorAll('.threads-drafter-time');
+    this.drafts.forEach((draft) => {
+      // Always remove existing indicators first, regardless of processed flag
+      const existingIndicators = draft.element.querySelectorAll('.threads-drafter-time, .threads-drafter-time-subtle');
       existingIndicators.forEach(indicator => indicator.remove());
 
       // Find existing "Posting" text within the draft element
@@ -679,16 +710,15 @@ class ThreadsDrafter {
 
         // Create compact time info to integrate with posting text
         const timeInfo = document.createElement('span');
+        timeInfo.className = 'threads-drafter-time-info';
         timeInfo.style.cssText = `
           margin-left: 6px;
           color: #1DA1F2;
           font-weight: 500;
           background: rgba(29, 161, 242, 0.1);
-          padding: 2px 6px;
+          padding: 0 6px;
           border-radius: 4px;
-          font-size: 11px;
           display: inline-block;
-          vertical-align: middle;
         `;
         timeInfo.textContent = `${draft.scheduledTimeStr}`;
 
@@ -725,18 +755,24 @@ class ThreadsDrafter {
     const existing = dialogElement.querySelector('.threads-drafter-count');
     if (existing) existing.remove();
 
+    // Always remove existing integrated count badges
+    const draftsHeader = dialogElement.querySelector('h1 span');
+    if (draftsHeader) {
+      const existingCount = draftsHeader.querySelector('.threads-drafter-count-badge');
+      if (existingCount) existingCount.remove();
+    }
+
+    if (!this.showDraftCount) {
+      return; // Skip adding draft count if disabled
+    }
+
     if (this.drafts.length === 0) return;
 
-    // Find the existing "Drafts" header
-    const draftsHeader = dialogElement.querySelector('h1 span');
+    // Verify we have the drafts header (already found above)
     if (!draftsHeader || !draftsHeader.textContent.includes('Drafts')) {
       console.warn('[Threads Drafter] Could not find Drafts header for count integration');
       return;
     }
-
-    // Remove any existing integrated count
-    const existingCount = draftsHeader.querySelector('.threads-drafter-count-badge');
-    if (existingCount) existingCount.remove();
 
     // Create compact count badge to integrate into header
     const countBadge = document.createElement('span');
