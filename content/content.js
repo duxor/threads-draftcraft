@@ -577,35 +577,46 @@ class ThreadsDrafter {
   }
 
   /**
-   * Add extension indicator to show it's active
+   * Add extension indicator to show it's active (integrated into existing header)
    */
   addExtensionIndicator(dialogElement) {
-    // Remove existing indicator
+    // Remove any existing separate indicators
     const existing = dialogElement.querySelector('.threads-drafter-indicator');
     if (existing) existing.remove();
 
-    const indicator = document.createElement('div');
-    indicator.className = 'threads-drafter-indicator';
-    indicator.innerHTML = `
-      <div style="
-        background: #1DA1F2; 
-        color: white; 
-        padding: 8px 12px; 
-        border-radius: 6px; 
-        font-size: 12px; 
-        font-weight: 500;
-        margin: 8px;
-        display: flex;
+    // Find the existing "Drafts" header
+    const draftsHeader = dialogElement.querySelector('h1 span');
+    if (!draftsHeader || !draftsHeader.textContent.includes('Drafts')) {
+      console.warn('[Threads Drafter] Could not find Drafts header for integration');
+      return;
+    }
+
+    // Remove any existing integrated indicators
+    const existingStatus = draftsHeader.querySelector('.threads-drafter-status');
+    if (existingStatus) existingStatus.remove();
+
+    // Create compact status indicator to integrate into header
+    const statusIndicator = document.createElement('span');
+    statusIndicator.className = 'threads-drafter-status';
+    statusIndicator.innerHTML = `
+      <span style="
+        margin-left: 8px;
+        font-size: 12px;
+        font-weight: 400;
+        opacity: 0.8;
+        display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
       ">
-        <span style="width: 8px; height: 8px; background: #4CAF50; border-radius: 50%; display: inline-block;"></span>
-        Threads Drafter Active - Sorted by ${this.sortOrder} first
-      </div>
+        <svg width="8" height="8" viewBox="0 0 8 8" style="display: inline-block; margin-right: 2px;">
+          <path d="M4 6L1 3h6z" fill="#4CAF50"/>
+        </svg>
+        ${this.sortOrder} first
+      </span>
     `;
 
-    // Insert at the top of the dialog
-    dialogElement.insertBefore(indicator, dialogElement.firstChild);
+    // Integrate the status into the existing header
+    draftsHeader.appendChild(statusIndicator);
   }
 
   /**
@@ -625,7 +636,7 @@ class ThreadsDrafter {
   }
 
   /**
-   * Add time indicators to each draft
+   * Add time indicators to each draft (integrated into existing "Posting" sections)
    */
   addTimeIndicators() {
     this.drafts.forEach((draft) => {
@@ -634,30 +645,62 @@ class ThreadsDrafter {
         return;
       }
 
-      // Remove any existing indicators (both our own and any duplicates)
+      // Remove any existing separate time indicators (both our own and any duplicates)
       const existingIndicators = draft.element.querySelectorAll('.threads-drafter-time');
       existingIndicators.forEach(indicator => indicator.remove());
 
-      // Add time indicator
-      const timeIndicator = document.createElement('div');
-      timeIndicator.className = 'threads-drafter-time';
-      timeIndicator.innerHTML = `
-        <div style="
-          background: rgba(29, 161, 242, 0.1);
+      // Find existing "Posting" text within the draft element
+      const walker = document.createTreeWalker(
+        draft.element,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: function(node) {
+            return node.textContent.toLowerCase().includes('posting') ? 
+              NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+          }
+        }
+      );
+
+      let postingTextNode = walker.nextNode();
+      if (postingTextNode && postingTextNode.parentElement) {
+        // Remove any existing integrated time info
+        const existingTimeInfo = postingTextNode.parentElement.querySelector('.threads-drafter-time-info');
+        if (existingTimeInfo) existingTimeInfo.remove();
+
+        // Create compact time info to integrate with posting text
+        const timeInfo = document.createElement('span');
+        timeInfo.style.cssText = `
+          margin-left: 6px;
           color: #1DA1F2;
-          padding: 4px 8px;
+          font-weight: 500;
+          background: rgba(29, 161, 242, 0.1);
+          padding: 2px 6px;
           border-radius: 4px;
           font-size: 11px;
-          font-weight: 500;
-          margin: 4px 0;
-          border-left: 3px solid #1DA1F2;
-        ">
-          📅 Scheduled ${draft.scheduledTimeStr}
-        </div>
-      `;
+          display: inline-block;
+          vertical-align: middle;
+        `;
+        timeInfo.textContent = `${draft.scheduledTimeStr}`;
 
-      // Insert at the top of the draft element
-      draft.element.insertBefore(timeIndicator, draft.element.firstChild);
+        // Integrate the time info with the existing posting text
+        postingTextNode.parentElement.appendChild(timeInfo);
+      } else {
+        // Fallback: if no "Posting" text found, add a subtle indicator at the top
+        const timeIndicator = document.createElement('div');
+        timeIndicator.className = 'threads-drafter-time-subtle';
+        timeIndicator.innerHTML = `
+          <div style="
+            color: #1DA1F2;
+            font-size: 10px;
+            font-weight: 500;
+            margin: 2px 0;
+            opacity: 0.8;
+          ">
+            📅 ${draft.scheduledTimeStr}
+          </div>
+        `;
+        draft.element.insertBefore(timeIndicator, draft.element.firstChild);
+      }
       
       // Mark this element as processed to prevent future duplicates
       draft.element.setAttribute('data-threads-drafter-time-added', 'true');
@@ -665,39 +708,48 @@ class ThreadsDrafter {
   }
 
   /**
-   * Add draft count indicator
+   * Add draft count indicator (integrated into existing header)
    */
   addDraftCount(dialogElement) {
-    // Remove existing count
+    // Remove any existing separate count indicators
     const existing = dialogElement.querySelector('.threads-drafter-count');
     if (existing) existing.remove();
 
     if (this.drafts.length === 0) return;
 
-    const countIndicator = document.createElement('div');
-    countIndicator.className = 'threads-drafter-count';
-    countIndicator.innerHTML = `
-      <div style="
-        background: rgba(76, 175, 80, 0.1);
+    // Find the existing "Drafts" header
+    const draftsHeader = dialogElement.querySelector('h1 span');
+    if (!draftsHeader || !draftsHeader.textContent.includes('Drafts')) {
+      console.warn('[Threads Drafter] Could not find Drafts header for count integration');
+      return;
+    }
+
+    // Remove any existing integrated count
+    const existingCount = draftsHeader.querySelector('.threads-drafter-count-badge');
+    if (existingCount) existingCount.remove();
+
+    // Create compact count badge to integrate into header
+    const countBadge = document.createElement('span');
+    countBadge.className = 'threads-drafter-count-badge';
+    countBadge.innerHTML = `
+      <span style="
+        margin-left: 8px;
+        background: rgba(76, 175, 80, 0.15);
         color: #4CAF50;
-        padding: 6px 10px;
-        border-radius: 4px;
-        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 11px;
         font-weight: 500;
-        margin: 8px;
-        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
       ">
-        📊 ${this.drafts.length} draft${this.drafts.length > 1 ? 's' : ''} total
-      </div>
+        📊 ${this.drafts.length}
+      </span>
     `;
 
-    // Add after the extension indicator
-    const indicator = dialogElement.querySelector('.threads-drafter-indicator');
-    if (indicator && indicator.nextSibling) {
-      dialogElement.insertBefore(countIndicator, indicator.nextSibling);
-    } else {
-      dialogElement.insertBefore(countIndicator, dialogElement.firstChild);
-    }
+    // Integrate the count into the existing header
+    draftsHeader.appendChild(countBadge);
   }
 
   /**
