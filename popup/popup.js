@@ -545,7 +545,7 @@ class ThreadsDrafterPopup {
    */
   openHelpPage() {
     chrome.tabs.create({
-      url: 'https://github.com/username/threads-scheduler-extension#usage'
+      url: 'https://github.com/duxor/threads-drafter#usage'
     });
   }
 
@@ -554,7 +554,7 @@ class ThreadsDrafterPopup {
    */
   openFeedbackPage() {
     chrome.tabs.create({
-      url: 'https://github.com/username/threads-scheduler-extension/issues'
+      url: 'https://github.com/duxor/threads-drafter/issues'
     });
   }
 
@@ -563,7 +563,7 @@ class ThreadsDrafterPopup {
    */
   openGithubPage() {
     chrome.tabs.create({
-      url: 'https://github.com/username/threads-scheduler-extension'
+      url: 'https://github.com/duxor/threads-drafter'
     });
   }
 }

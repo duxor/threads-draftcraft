@@ -110,8 +110,8 @@ function sortDraftsByTime(drafts) {
 
 ```bash
 # Clone the repository
-git clone https://github.com/username/threads-scheduler-extension.git
-cd threads-scheduler-extension
+git clone https://github.com/duxor/threads-drafter.git
+cd threads-drafter
 
 # Install dependencies (if any)
 npm install
@@ -254,8 +254,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/username/threads-scheduler-extension/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/username/threads-scheduler-extension/discussions)
+- **Issues**: [GitHub Issues](https://github.com/duxor/threads-drafter/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/duxor/threads-drafter/discussions)
 - **Email**: support@threadsdrafter.com (if applicable)
 
 ## 🔗 Links
