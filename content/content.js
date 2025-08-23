@@ -20,8 +20,6 @@ class ThreadsDrafter {
    * Initialize the extension
    */
   async init() {
-    // console.log('[Threads Drafter] Extension initialized');
-    
     // Load settings from storage
     await this.loadSettings();
     
@@ -113,7 +111,6 @@ class ThreadsDrafter {
             }
             
             if (this.isDraftsDialog(dialog)) {
-              // console.log('[Threads Drafter] Drafts dialog detected');
               this.processDrafts(dialog);
             }
           });
@@ -143,7 +140,6 @@ class ThreadsDrafter {
       }
       
       if (this.isDraftsDialog(dialog)) {
-        // console.log('[Threads Drafter] Existing drafts dialog found');
         this.processDrafts(dialog);
       }
     });
@@ -171,7 +167,6 @@ class ThreadsDrafter {
     
     for (const indicator of editIndicators) {
       if (textContent.includes(indicator)) {
-        // console.log('[Threads Drafter] Edit dialog detected, ignoring:', indicator);
         return false;
       }
     }
@@ -227,8 +222,6 @@ class ThreadsDrafter {
     // Reset all processed flags on draft elements
     const processedElements = dialogElement.querySelectorAll('[data-threads-drafter-time-added]');
     processedElements.forEach(element => element.removeAttribute('data-threads-drafter-time-added'));
-    
-    // console.log('[Threads Drafter] Removed existing enhancements for reprocessing');
   }
 
   /**
@@ -248,8 +241,6 @@ class ThreadsDrafter {
     originalDrafts.forEach((draft) => {
       container.appendChild(draft.element);
     });
-    
-    // console.log('[Threads Drafter] Restored original draft order');
   }
 
   /**
@@ -320,8 +311,6 @@ class ThreadsDrafter {
         this.drafts.push(draft);
       }
     });
-
-    // console.log(`[Threads Drafter] Found ${this.drafts.length} drafts`);
   }
 
   /**
@@ -393,8 +382,6 @@ class ThreadsDrafter {
         filteredElements.push(element);
       }
     });
-
-    // console.log(`[Threads Drafter] Selected ${filteredElements.length} draft elements from ${draftElements.length} candidates`);
     return filteredElements;
   }
 
@@ -623,8 +610,6 @@ class ThreadsDrafter {
       if (!dayMatch && scheduledDate <= now) {
         scheduledDate.setDate(now.getDate() + 1);
       }
-      
-      // console.log(`[Threads Drafter] Parsed time from "${timeMatch[0]}" (day: ${dayMatch ? dayMatch[1] : 'none'}) -> ${scheduledDate.toLocaleString()}`);
       return scheduledDate;
     }
     
@@ -683,8 +668,6 @@ class ThreadsDrafter {
         const randomHour = Math.floor(Math.random() * 12) + 9; // 9 AM to 8 PM
         const randomMinute = Math.floor(Math.random() * 60);
         scheduledDate.setHours(randomHour, randomMinute, 0, 0);
-        
-        // console.log(`[Threads Drafter] Day fallback for "${dayName}" -> ${scheduledDate.toLocaleString()}`);
         return scheduledDate;
       }
     }
@@ -730,8 +713,6 @@ class ThreadsDrafter {
       new Date(Date.now() + 30 * 60 * 60 * 1000), // 30 hours from now (tomorrow)
       new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours from now (day after)
     ];
-    
-    // console.log(`[Threads Drafter] Using fallback time for index ${index}`);
     return mockTimes[index % mockTimes.length];
   }
 
@@ -810,7 +791,6 @@ class ThreadsDrafter {
     // Find the existing "Drafts" header
     const draftsHeader = dialogElement.querySelector('h1 span');
     if (!draftsHeader || !draftsHeader.textContent.includes('Drafts')) {
-      // console.warn('[Threads Drafter] Could not find Drafts header for integration');
       return;
     }
 
