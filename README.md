@@ -6,6 +6,11 @@ A Chrome extension designed to enhance the organization and management of schedu
 
 **Threads Drafter** is an open-source Chrome extension that improves the user experience when working with scheduled drafts on [Threads.com](https://www.threads.com). The extension focuses on better organization, sorting, and management of draft posts that are scheduled for future publication.
 
+## 📸 Screenshot
+
+![Threads Drafter Extension Screenshot](./screenshots/threads-dratfer-1.png)
+*Threads Drafter in action - showing organized and sorted draft posts with enhanced visibility*
+
 ## ✨ Features
 
 ### Current Planned Features
