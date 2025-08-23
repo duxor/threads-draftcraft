@@ -1,18 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "Threads Drafter",
+  "name": "Threads DraftCraft",
   "version": "1.0.0",
-  "description": "Enhance organization and management of scheduled posts in Threads.com drafts section with smart sorting and improved UI.",
-  
+  "description": "Master your drafts. Craft your flow. Open-source Chrome extension that enhances Threads draft management with smart organization, sorting, and tracking of scheduled posts.",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "scripting"
   ],
-  
   "host_permissions": [
     "https://*.threads.com/*"
   ],
-  
   "content_scripts": [
     {
       "matches": ["https://*.threads.com/*"],
@@ -21,14 +19,12 @@
       "run_at": "document_idle"
     }
   ],
-  
   "background": {
     "service_worker": "background/background.js"
   },
-  
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "Threads Drafter",
+    "default_title": "Threads DraftCraft",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -36,14 +32,12 @@
       "128": "icons/icon128.png"
     }
   },
-  
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  
   "web_accessible_resources": [
     {
       "resources": ["content/*"],

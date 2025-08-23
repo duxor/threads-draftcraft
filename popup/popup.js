@@ -1,9 +1,9 @@
 /**
- * Threads Drafter - Popup Script
+ * Threads DraftCraft - Popup Script
  * Handles popup interface interactions and settings management
  */
 
-class ThreadsDrafterPopup {
+class ThreadsDraftCraftPopup {
   constructor() {
     this.settings = {
       sortOrder: 'earliest',
@@ -20,7 +20,7 @@ class ThreadsDrafterPopup {
    * Initialize the popup
    */
   async init() {
-    console.log('[Threads Drafter] Popup initialized');
+    console.log('[Threads DraftCraft] Popup initialized');
 
     // Load current settings
     await this.loadSettings();
@@ -53,7 +53,7 @@ class ThreadsDrafterPopup {
 
       this.settings = { ...this.settings, ...result };
     } catch (error) {
-      console.error('[Threads Drafter] Failed to load settings:', error);
+      console.error('[Threads DraftCraft] Failed to load settings:', error);
       this.showError('Failed to load settings');
     }
   }
@@ -64,9 +64,9 @@ class ThreadsDrafterPopup {
   async saveSettings() {
     try {
       await chrome.storage.sync.set(this.settings);
-      console.log('[Threads Drafter] Settings saved:', this.settings);
+      console.log('[Threads DraftCraft] Settings saved:', this.settings);
     } catch (error) {
-      console.error('[Threads Drafter] Failed to save settings:', error);
+      console.error('[Threads DraftCraft] Failed to save settings:', error);
       this.showError('Failed to save settings');
     }
   }
@@ -226,7 +226,7 @@ class ThreadsDrafterPopup {
         this.showNoStatsMessage();
       }
     } catch (error) {
-      console.error('[Threads Drafter] Failed to load draft stats:', error);
+      console.error('[Threads DraftCraft] Failed to load draft stats:', error);
       this.showNoStatsMessage();
     }
   }
@@ -276,7 +276,7 @@ class ThreadsDrafterPopup {
         });
       }
     } catch (error) {
-      console.error('[Threads Drafter] Failed to change sort order:', error);
+      console.error('[Threads DraftCraft] Failed to change sort order:', error);
     }
 
     this.showSuccess(`Sort order changed to ${order} first`);
@@ -299,7 +299,7 @@ class ThreadsDrafterPopup {
         });
       }
     } catch (error) {
-      console.error('[Threads Drafter] Failed to toggle auto sort:', error);
+      console.error('[Threads DraftCraft] Failed to toggle auto sort:', error);
     }
 
     this.showSuccess(enabled ? 'Auto sort enabled' : 'Auto sort disabled');
@@ -322,7 +322,7 @@ class ThreadsDrafterPopup {
         });
       }
     } catch (error) {
-      console.error('[Threads Drafter] Failed to toggle time indicators:', error);
+      console.error('[Threads DraftCraft] Failed to toggle time indicators:', error);
     }
 
     this.showSuccess(enabled ? 'Time indicators enabled' : 'Time indicators disabled');
@@ -345,7 +345,7 @@ class ThreadsDrafterPopup {
         });
       }
     } catch (error) {
-      console.error('[Threads Drafter] Failed to toggle draft count:', error);
+      console.error('[Threads DraftCraft] Failed to toggle draft count:', error);
     }
 
     this.showSuccess(enabled ? 'Draft count enabled' : 'Draft count disabled');
@@ -368,7 +368,7 @@ class ThreadsDrafterPopup {
         });
       }
     } catch (error) {
-      console.error('[Threads Drafter] Failed to toggle sort indicator:', error);
+      console.error('[Threads DraftCraft] Failed to toggle sort indicator:', error);
     }
 
     this.showSuccess(enabled ? 'Sort indicator enabled' : 'Sort indicator disabled');
@@ -392,7 +392,7 @@ class ThreadsDrafterPopup {
       await this.loadDraftStats();
       this.showSuccess('Drafts refreshed');
     } catch (error) {
-      console.error('[Threads Drafter] Failed to refresh drafts:', error);
+      console.error('[Threads DraftCraft] Failed to refresh drafts:', error);
       this.showError('Failed to refresh drafts');
     } finally {
       this.showLoading(false);
@@ -409,7 +409,7 @@ class ThreadsDrafterPopup {
       });
       window.close();
     } catch (error) {
-      console.error('[Threads Drafter] Failed to open Threads:', error);
+      console.error('[Threads DraftCraft] Failed to open Threads:', error);
       this.showError('Failed to open Threads.com');
     }
   }
@@ -425,7 +425,7 @@ class ThreadsDrafterPopup {
         this.showThreadsNotActiveMessage();
       }
     } catch (error) {
-      console.error('[Threads Drafter] Failed to check tab:', error);
+      console.error('[Threads DraftCraft] Failed to check tab:', error);
     }
   }
 
@@ -545,7 +545,7 @@ class ThreadsDrafterPopup {
    */
   openHelpPage() {
     chrome.tabs.create({
-      url: 'https://github.com/duxor/threads-drafter#usage'
+      url: 'https://github.com/duxor/threads-draftcraft#usage'
     });
   }
 
@@ -554,7 +554,7 @@ class ThreadsDrafterPopup {
    */
   openFeedbackPage() {
     chrome.tabs.create({
-      url: 'https://github.com/duxor/threads-drafter/issues'
+      url: 'https://github.com/duxor/threads-draftcraft/issues'
     });
   }
 
@@ -563,12 +563,12 @@ class ThreadsDrafterPopup {
    */
   openGithubPage() {
     chrome.tabs.create({
-      url: 'https://github.com/duxor/threads-drafter'
+      url: 'https://github.com/duxor/threads-draftcraft'
     });
   }
 }
 
 // Initialize popup when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  new ThreadsDrafterPopup();
+  new ThreadsDraftCraftPopup();
 });

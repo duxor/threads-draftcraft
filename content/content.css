@@ -1,58 +1,58 @@
 /**
- * Threads Drafter - Content Styles
+ * Threads DraftCraft - Content Styles
  * CSS styles for enhancing the drafts section UI
  */
 
 /* Extension Indicator Styles */
-.threads-drafter-indicator {
+.threads-draftcraft-indicator {
   position: relative;
   z-index: 1000;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.threads-drafter-indicator > div {
-  animation: threads-drafter-fade-in 0.3s ease-in-out;
+.threads-draftcraft-indicator > div {
+  animation: threads-draftcraft-fade-in 0.3s ease-in-out;
   box-shadow: 0 2px 8px rgba(29, 161, 242, 0.2);
   border: 1px solid rgba(29, 161, 242, 0.3);
 }
 
 /* Draft Count Indicator */
-.threads-drafter-count {
+.threads-draftcraft-count {
   position: relative;
   z-index: 999;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.threads-drafter-count > div {
-  animation: threads-drafter-slide-in 0.4s ease-out;
+.threads-draftcraft-count > div {
+  animation: threads-draftcraft-slide-in 0.4s ease-out;
   box-shadow: 0 1px 4px rgba(76, 175, 80, 0.2);
   border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
 /* Time Indicator Styles */
-.threads-drafter-time {
+.threads-draftcraft-time {
   position: relative;
   z-index: 998;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.threads-drafter-time > div {
-  animation: threads-drafter-slide-in-left 0.3s ease-out;
+.threads-draftcraft-time > div {
+  animation: threads-draftcraft-slide-in-left 0.3s ease-out;
   box-shadow: 0 1px 3px rgba(29, 161, 242, 0.15);
   transition: all 0.2s ease;
 }
 
-.threads-drafter-time > div:hover {
+.threads-draftcraft-time > div:hover {
   background: rgba(29, 161, 242, 0.15) !important;
   transform: translateX(2px);
 }
 
 /* Enhanced Draft Container Styles */
-[data-threads-drafter-enhanced] {
+[data-threads-draftcraft-enhanced] {
   position: relative;
 }
 
-[data-threads-drafter-enhanced]::before {
+[data-threads-draftcraft-enhanced]::before {
   content: '';
   position: absolute;
   left: 0;
@@ -70,67 +70,67 @@
 }
 
 /* Draft Sorting Visual Feedback */
-.threads-drafter-sorting {
+.threads-draftcraft-sorting {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.threads-drafter-sorting.moving {
+.threads-draftcraft-sorting.moving {
   transform: scale(0.98);
   opacity: 0.8;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Improved Draft Visibility */
-.threads-drafter-draft-container {
+.threads-draftcraft-draft-container {
   border-radius: 8px;
   transition: all 0.2s ease;
   margin: 4px 0;
 }
 
-.threads-drafter-draft-container:hover {
+.threads-draftcraft-draft-container:hover {
   background: rgba(29, 161, 242, 0.05);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Priority Indicators */
-.threads-drafter-priority-high {
+.threads-draftcraft-priority-high {
   border-left: 4px solid #FF6B6B !important;
 }
 
-.threads-drafter-priority-high .threads-drafter-time > div {
+.threads-draftcraft-priority-high .threads-draftcraft-time > div {
   background: rgba(255, 107, 107, 0.1) !important;
   color: #D63384 !important;
   border-left-color: #FF6B6B !important;
 }
 
-.threads-drafter-priority-medium {
+.threads-draftcraft-priority-medium {
   border-left: 4px solid #FFB347 !important;
 }
 
-.threads-drafter-priority-medium .threads-drafter-time > div {
+.threads-draftcraft-priority-medium .threads-draftcraft-time > div {
   background: rgba(255, 179, 71, 0.1) !important;
   color: #E67E00 !important;
   border-left-color: #FFB347 !important;
 }
 
-.threads-drafter-priority-low {
+.threads-draftcraft-priority-low {
   border-left: 4px solid #4CAF50 !important;
 }
 
-.threads-drafter-priority-low .threads-drafter-time > div {
+.threads-draftcraft-priority-low .threads-draftcraft-time > div {
   background: rgba(76, 175, 80, 0.1) !important;
   color: #2E7D32 !important;
   border-left-color: #4CAF50 !important;
 }
 
 /* Loading States */
-.threads-drafter-loading {
+.threads-draftcraft-loading {
   position: relative;
   overflow: hidden;
 }
 
-.threads-drafter-loading::after {
+.threads-draftcraft-loading::after {
   content: '';
   position: absolute;
   top: 0;
@@ -143,11 +143,11 @@
     rgba(29, 161, 242, 0.2),
     transparent
   );
-  animation: threads-drafter-shimmer 1.5s infinite;
+  animation: threads-draftcraft-shimmer 1.5s infinite;
 }
 
 /* Settings Panel Styles */
-.threads-drafter-settings {
+.threads-draftcraft-settings {
   background: white;
   border: 1px solid #E1E8ED;
   border-radius: 8px;
@@ -157,14 +157,14 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.threads-drafter-settings-title {
+.threads-draftcraft-settings-title {
   font-weight: 600;
   color: #1DA1F2;
   margin-bottom: 8px;
   font-size: 13px;
 }
 
-.threads-drafter-setting-item {
+.threads-draftcraft-setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -172,7 +172,7 @@
   font-size: 12px;
 }
 
-.threads-drafter-toggle {
+.threads-draftcraft-toggle {
   width: 40px;
   height: 20px;
   background: #ccc;
@@ -182,11 +182,11 @@
   transition: background 0.2s;
 }
 
-.threads-drafter-toggle.active {
+.threads-draftcraft-toggle.active {
   background: #1DA1F2;
 }
 
-.threads-drafter-toggle::after {
+.threads-draftcraft-toggle::after {
   content: '';
   width: 16px;
   height: 16px;
@@ -199,12 +199,12 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.threads-drafter-toggle.active::after {
+.threads-draftcraft-toggle.active::after {
   transform: translateX(20px);
 }
 
 /* Statistics Display */
-.threads-drafter-stats {
+.threads-draftcraft-stats {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 10px 12px;
@@ -215,7 +215,7 @@
   text-align: center;
 }
 
-.threads-drafter-stats-row {
+.threads-draftcraft-stats-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -224,56 +224,56 @@
 
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
-  .threads-drafter-indicator > div,
-  .threads-drafter-count > div,
-  .threads-drafter-settings {
+  .threads-draftcraft-indicator > div,
+  .threads-draftcraft-count > div,
+  .threads-draftcraft-settings {
     background: #1a1a1a;
     border-color: #333;
     color: #fff;
   }
   
-  .threads-drafter-draft-container:hover {
+  .threads-draftcraft-draft-container:hover {
     background: rgba(29, 161, 242, 0.1);
   }
   
-  .threads-drafter-toggle {
+  .threads-draftcraft-toggle {
     background: #444;
   }
 }
 
 /* Responsive Design */
 @media (max-width: 480px) {
-  .threads-drafter-indicator > div,
-  .threads-drafter-count > div,
-  .threads-drafter-time > div {
+  .threads-draftcraft-indicator > div,
+  .threads-draftcraft-count > div,
+  .threads-draftcraft-time > div {
     font-size: 11px;
     padding: 6px 8px;
     margin: 6px;
   }
   
-  .threads-drafter-settings {
+  .threads-draftcraft-settings {
     padding: 10px;
     margin: 6px;
   }
 }
 
 /* Accessibility Improvements */
-.threads-drafter-indicator:focus,
-.threads-drafter-count:focus,
-.threads-drafter-time:focus {
+.threads-draftcraft-indicator:focus,
+.threads-draftcraft-count:focus,
+.threads-draftcraft-time:focus {
   outline: 2px solid #1DA1F2;
   outline-offset: 2px;
 }
 
 /* High Contrast Mode */
 @media (prefers-contrast: more) {
-  .threads-drafter-indicator > div {
+  .threads-draftcraft-indicator > div {
     border: 2px solid #1DA1F2;
     background: #000;
     color: #fff;
   }
   
-  .threads-drafter-time > div {
+  .threads-draftcraft-time > div {
     border: 2px solid #1DA1F2;
     background: #fff;
     color: #000;
@@ -282,18 +282,18 @@
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
-  .threads-drafter-indicator > div,
-  .threads-drafter-count > div,
-  .threads-drafter-time > div,
-  .threads-drafter-draft-container,
-  .threads-drafter-sorting {
+  .threads-draftcraft-indicator > div,
+  .threads-draftcraft-count > div,
+  .threads-draftcraft-time > div,
+  .threads-draftcraft-draft-container,
+  .threads-draftcraft-sorting {
     animation: none !important;
     transition: none !important;
   }
 }
 
 /* Animation Keyframes */
-@keyframes threads-drafter-fade-in {
+@keyframes threads-draftcraft-fade-in {
   from {
     opacity: 0;
     transform: translateY(-10px);
@@ -304,7 +304,7 @@
   }
 }
 
-@keyframes threads-drafter-slide-in {
+@keyframes threads-draftcraft-slide-in {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -315,7 +315,7 @@
   }
 }
 
-@keyframes threads-drafter-slide-in-left {
+@keyframes threads-draftcraft-slide-in-left {
   from {
     opacity: 0;
     transform: translateX(-20px);
@@ -326,7 +326,7 @@
   }
 }
 
-@keyframes threads-drafter-shimmer {
+@keyframes threads-draftcraft-shimmer {
   0% {
     left: -100%;
   }
@@ -335,7 +335,7 @@
   }
 }
 
-@keyframes threads-drafter-pulse {
+@keyframes threads-draftcraft-pulse {
   0%, 100% {
     opacity: 1;
   }
@@ -345,16 +345,16 @@
 }
 
 /* Utility Classes */
-.threads-drafter-hidden {
+.threads-draftcraft-hidden {
   display: none !important;
 }
 
-.threads-drafter-fade-out {
+.threads-draftcraft-fade-out {
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-.threads-drafter-no-select {
+.threads-draftcraft-no-select {
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -362,7 +362,7 @@
 }
 
 /* Error States */
-.threads-drafter-error {
+.threads-draftcraft-error {
   background: rgba(220, 53, 69, 0.1);
   color: #dc3545;
   border: 1px solid rgba(220, 53, 69, 0.3);
@@ -373,7 +373,7 @@
 }
 
 /* Success States */
-.threads-drafter-success {
+.threads-draftcraft-success {
   background: rgba(40, 167, 69, 0.1);
   color: #28a745;
   border: 1px solid rgba(40, 167, 69, 0.3);

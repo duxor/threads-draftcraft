@@ -1,9 +1,9 @@
 /**
- * Threads Drafter - Background Script
+ * Threads DraftCraft - Background Script
  * Handles extension lifecycle events and coordinates between components
  */
 
-class ThreadsDrafterBackground {
+class ThreadsDraftCraftBackground {
   constructor() {
     this.init();
   }
@@ -12,7 +12,7 @@ class ThreadsDrafterBackground {
    * Initialize the background script
    */
   init() {
-    console.log('[Threads Drafter] Background script initialized');
+    console.log('[Threads DraftCraft] Background script initialized');
 
     // Setup event listeners
     this.setupEventListeners();
@@ -62,10 +62,10 @@ class ThreadsDrafterBackground {
       if (!result.isInstalled) {
         await this.initializeDefaultSettings();
         await chrome.storage.sync.set({ isInstalled: true });
-        console.log('[Threads Drafter] Extension installed with default settings');
+        console.log('[Threads DraftCraft] Extension installed with default settings');
       }
     } catch (error) {
-      console.error('[Threads Drafter] Failed to handle installation:', error);
+      console.error('[Threads DraftCraft] Failed to handle installation:', error);
     }
   }
 
@@ -84,9 +84,9 @@ class ThreadsDrafterBackground {
 
     try {
       await chrome.storage.sync.set(defaultSettings);
-      console.log('[Threads Drafter] Default settings initialized:', defaultSettings);
+      console.log('[Threads DraftCraft] Default settings initialized:', defaultSettings);
     } catch (error) {
-      console.error('[Threads Drafter] Failed to initialize default settings:', error);
+      console.error('[Threads DraftCraft] Failed to initialize default settings:', error);
     }
   }
 
@@ -94,7 +94,7 @@ class ThreadsDrafterBackground {
    * Handle extension installed event
    */
   async handleOnInstalled(details) {
-    console.log('[Threads Drafter] Extension installed/updated:', details);
+    console.log('[Threads DraftCraft] Extension installed/updated:', details);
 
     switch (details.reason) {
       case 'install':
@@ -104,7 +104,7 @@ class ThreadsDrafterBackground {
         await this.handleUpdate(details.previousVersion);
         break;
       case 'chrome_update':
-        console.log('[Threads Drafter] Chrome was updated');
+        console.log('[Threads DraftCraft] Chrome was updated');
         break;
     }
   }
@@ -113,15 +113,15 @@ class ThreadsDrafterBackground {
    * Handle first installation
    */
   async handleFirstInstall() {
-    console.log('[Threads Drafter] First installation detected');
+    console.log('[Threads DraftCraft] First installation detected');
 
     // Set badge to indicate extension is active
     try {
       await chrome.action.setBadgeText({ text: '✓' });
       await chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' });
-      await chrome.action.setTitle({ title: 'Threads Drafter - Ready' });
+      await chrome.action.setTitle({ title: 'Threads DraftCraft - Ready' });
     } catch (error) {
-      console.error('[Threads Drafter] Failed to set badge:', error);
+      console.error('[Threads DraftCraft] Failed to set badge:', error);
     }
 
     // Show welcome notification (optional)
@@ -132,7 +132,7 @@ class ThreadsDrafterBackground {
    * Handle extension update
    */
   async handleUpdate(previousVersion) {
-    console.log('[Threads Drafter] Extension updated from version:', previousVersion);
+    console.log('[Threads DraftCraft] Extension updated from version:', previousVersion);
 
     try {
       // Update version in storage
@@ -145,9 +145,9 @@ class ThreadsDrafterBackground {
       // Perform any migration logic here if needed
       await this.performMigration(previousVersion);
 
-      console.log('[Threads Drafter] Update completed successfully');
+      console.log('[Threads DraftCraft] Update completed successfully');
     } catch (error) {
-      console.error('[Threads Drafter] Failed to handle update:', error);
+      console.error('[Threads DraftCraft] Failed to handle update:', error);
     }
   }
 
@@ -155,7 +155,7 @@ class ThreadsDrafterBackground {
    * Perform data migration for updates
    */
   async performMigration(previousVersion) {
-    console.log('[Threads Drafter] Performing migration from version:', previousVersion);
+    console.log('[Threads DraftCraft] Performing migration from version:', previousVersion);
 
     // Add migration logic here as needed for future updates
     // For example:
@@ -170,7 +170,7 @@ class ThreadsDrafterBackground {
    * Handle extension startup
    */
   handleOnStartup() {
-    console.log('[Threads Drafter] Extension startup');
+    console.log('[Threads DraftCraft] Extension startup');
     
     // Reset badge on startup
     this.updateBadge();
@@ -180,7 +180,7 @@ class ThreadsDrafterBackground {
    * Handle messages from content scripts and popup
    */
   async handleMessage(message, sender, sendResponse) {
-    console.log('[Threads Drafter] Received message:', message, 'from:', sender);
+    console.log('[Threads DraftCraft] Received message:', message, 'from:', sender);
 
     try {
       switch (message.action) {
@@ -211,11 +211,11 @@ class ThreadsDrafterBackground {
           break;
 
         default:
-          console.warn('[Threads Drafter] Unknown message action:', message.action);
+          console.warn('[Threads DraftCraft] Unknown message action:', message.action);
           sendResponse({ success: false, error: 'Unknown action' });
       }
     } catch (error) {
-      console.error('[Threads Drafter] Error handling message:', error);
+      console.error('[Threads DraftCraft] Error handling message:', error);
       sendResponse({ success: false, error: error.message });
     }
   }
@@ -226,21 +226,21 @@ class ThreadsDrafterBackground {
   async handleTabUpdate(tabId, changeInfo, tab) {
     // Only process completed navigations to threads.com
     if (changeInfo.status === 'complete' && tab.url && tab.url.includes('threads.com')) {
-      console.log('[Threads Drafter] Threads.com tab detected:', tabId);
+      console.log('[Threads DraftCraft] Threads.com tab detected:', tabId);
 
       try {
         // Update badge to show extension is active on this tab
         await chrome.action.setBadgeText({ text: '●', tabId });
         await chrome.action.setBadgeBackgroundColor({ color: '#1DA1F2', tabId });
         await chrome.action.setTitle({ 
-          title: 'Threads Drafter - Active on this tab',
+          title: 'Threads DraftCraft - Active on this tab',
           tabId 
         });
 
         // Optionally inject content script if not already present
         await this.ensureContentScriptInjected(tabId);
       } catch (error) {
-        console.error('[Threads Drafter] Failed to handle tab update:', error);
+        console.error('[Threads DraftCraft] Failed to handle tab update:', error);
       }
     }
   }
@@ -253,7 +253,7 @@ class ThreadsDrafterBackground {
       // Check if content script is already running
       const response = await chrome.tabs.sendMessage(tabId, { action: 'ping' });
       if (response && response.success) {
-        console.log('[Threads Drafter] Content script already active in tab:', tabId);
+        console.log('[Threads DraftCraft] Content script already active in tab:', tabId);
         return;
       }
     } catch (error) {
@@ -269,9 +269,9 @@ class ThreadsDrafterBackground {
           files: ['content/content.css']
         });
 
-        console.log('[Threads Drafter] Content script injected into tab:', tabId);
+        console.log('[Threads DraftCraft] Content script injected into tab:', tabId);
       } catch (injectError) {
-        console.error('[Threads Drafter] Failed to inject content script:', injectError);
+        console.error('[Threads DraftCraft] Failed to inject content script:', injectError);
       }
     }
   }
@@ -280,7 +280,7 @@ class ThreadsDrafterBackground {
    * Handle storage changes
    */
   handleStorageChange(changes, areaName) {
-    console.log('[Threads Drafter] Storage changed:', changes, 'in area:', areaName);
+    console.log('[Threads DraftCraft] Storage changed:', changes, 'in area:', areaName);
 
     // Broadcast settings changes to all tabs
     this.broadcastSettingsUpdate(changes);
@@ -301,7 +301,7 @@ class ThreadsDrafterBackground {
 
       return result;
     } catch (error) {
-      console.error('[Threads Drafter] Failed to get settings:', error);
+      console.error('[Threads DraftCraft] Failed to get settings:', error);
       throw error;
     }
   }
@@ -312,9 +312,9 @@ class ThreadsDrafterBackground {
   async saveSettings(settings) {
     try {
       await chrome.storage.sync.set(settings);
-      console.log('[Threads Drafter] Settings saved:', settings);
+      console.log('[Threads DraftCraft] Settings saved:', settings);
     } catch (error) {
-      console.error('[Threads Drafter] Failed to save settings:', error);
+      console.error('[Threads DraftCraft] Failed to save settings:', error);
       throw error;
     }
   }
@@ -334,7 +334,7 @@ class ThreadsDrafterBackground {
 
       return response || null;
     } catch (error) {
-      console.error('[Threads Drafter] Failed to get draft stats:', error);
+      console.error('[Threads DraftCraft] Failed to get draft stats:', error);
       return null;
     }
   }
@@ -347,14 +347,14 @@ class ThreadsDrafterBackground {
       if (count !== null) {
         await chrome.action.setBadgeText({ text: count.toString() });
         await chrome.action.setBadgeBackgroundColor({ color: '#1DA1F2' });
-        await chrome.action.setTitle({ title: `Threads Drafter - ${count} drafts found` });
+        await chrome.action.setTitle({ title: `Threads DraftCraft - ${count} drafts found` });
       } else {
         await chrome.action.setBadgeText({ text: '✓' });
         await chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' });
-        await chrome.action.setTitle({ title: 'Threads Drafter - Ready' });
+        await chrome.action.setTitle({ title: 'Threads DraftCraft - Ready' });
       }
     } catch (error) {
-      console.error('[Threads Drafter] Failed to update badge:', error);
+      console.error('[Threads DraftCraft] Failed to update badge:', error);
     }
   }
 
@@ -376,7 +376,7 @@ class ThreadsDrafterBackground {
         }
       }
     } catch (error) {
-      console.error('[Threads Drafter] Failed to broadcast settings update:', error);
+      console.error('[Threads DraftCraft] Failed to broadcast settings update:', error);
     }
   }
 
@@ -384,7 +384,7 @@ class ThreadsDrafterBackground {
    * Log errors for debugging
    */
   logError(error, context) {
-    console.error(`[Threads Drafter] ${context}:`, error);
+    console.error(`[Threads DraftCraft] ${context}:`, error);
 
     // Store error in local storage for debugging (optional)
     try {
@@ -405,7 +405,7 @@ class ThreadsDrafterBackground {
         chrome.storage.local.set({ errorLog });
       });
     } catch (storageError) {
-      console.error('[Threads Drafter] Failed to log error:', storageError);
+      console.error('[Threads DraftCraft] Failed to log error:', storageError);
     }
   }
 
@@ -415,14 +415,14 @@ class ThreadsDrafterBackground {
   showWelcomeNotification() {
     // This could show a notification or open a welcome page
     // For now, just log the welcome message
-    console.log('[Threads Drafter] Welcome! Extension installed successfully.');
+    console.log('[Threads DraftCraft] Welcome! Extension installed successfully.');
 
     // Optionally create a notification
     /*
     chrome.notifications.create('welcome', {
       type: 'basic',
       iconUrl: 'icons/icon48.png',
-      title: 'Threads Drafter Installed!',
+      title: 'Threads DraftCraft Installed!',
       message: 'Your extension is ready. Visit Threads.com to get started.'
     });
     */
@@ -430,4 +430,4 @@ class ThreadsDrafterBackground {
 }
 
 // Initialize background script
-const threadsDrafterBackground = new ThreadsDrafterBackground();
+const threadsDraftCraftBackground = new ThreadsDraftCraftBackground();

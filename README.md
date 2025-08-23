@@ -1,15 +1,23 @@
-# Threads Drafter
+# Threads DraftCraft
+
+**Master your drafts. Craft your flow.**
 
 A Chrome extension designed to enhance the organization and management of scheduled posts in the Threads.com drafts section.
 
 ## 🎯 Overview
 
-**Threads Drafter** is an open-source Chrome extension that improves the user experience when working with scheduled drafts on [Threads.com](https://www.threads.com). The extension focuses on better organization, sorting, and management of draft posts that are scheduled for future publication.
+**Threads DraftCraft** is an open-source Chrome extension that improves the user experience when working with scheduled drafts on [Threads.com](https://www.threads.com). The extension enables you to organize, sort, and track your scheduled posts with intuitive overview and advanced management options.
+
+Threads DraftCraft brings you a better way to manage drafts on Threads.com. With smart sorting, clearer time displays, statistics, and future options like tags, notes, and notifications – this extension helps you keep your ideas and scheduled posts under complete control.
+
+Whether you're a content creator, community manager, or just someone who loves organization, DraftCraft gives you the tool to transform your drafts into well-planned posts.
+
+> **Disclaimer**: Threads DraftCraft is not affiliated with Threads or Meta. It's a community-driven open-source extension designed to improve your draft management experience.
 
 ## 📸 Screenshot
 
-![Threads Drafter Extension Screenshot](./screenshots/threads-dratfer-1.png)
-*Threads Drafter in action - showing organized and sorted draft posts with enhanced visibility*
+![Threads DraftCraft Extension Screenshot](./screenshots/threads-draftcraft-1.png)
+*Threads DraftCraft in action - showing organized and sorted draft posts with enhanced visibility*
 
 ## ✨ Features
 
@@ -96,7 +104,7 @@ function sortDraftsByTime(drafts) {
 
 1. **Download from Chrome Web Store** (Coming Soon)
    - Visit the Chrome Web Store
-   - Search for "Threads Drafter"
+   - Search for "Threads DraftCraft"
    - Click "Add to Chrome"
 
 2. **Manual Installation** (Development)
@@ -110,8 +118,8 @@ function sortDraftsByTime(drafts) {
 
 ```bash
 # Clone the repository
-git clone https://github.com/duxor/threads-drafter.git
-cd threads-drafter
+git clone https://github.com/duxor/threads-draftcraft.git
+cd threads-draftcraft
 
 # Install dependencies (if any)
 npm install
@@ -254,8 +262,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/duxor/threads-drafter/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/duxor/threads-drafter/discussions)
+- **Issues**: [GitHub Issues](https://github.com/duxor/threads-draftcraft/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/duxor/threads-draftcraft/discussions)
 - **Email**: support@threadsdrafter.com (if applicable)
 
 ## 🔗 Links

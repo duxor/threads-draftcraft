@@ -1,9 +1,9 @@
 /**
- * Threads Drafter - Content Script
+ * Threads DraftCraft - Content Script
  * Enhances the drafts section on threads.com with sorting and organization features
  */
 
-class ThreadsDrafter {
+class ThreadsDraftCraft {
   constructor() {
     this.drafts = [];
     this.sortOrder = 'earliest'; // 'earliest' or 'latest'
@@ -48,7 +48,7 @@ class ThreadsDrafter {
       this.showDraftCount = result.showDraftCount;
       this.showSortIndicator = result.showSortIndicator;
     } catch (error) {
-      console.warn('[Threads Drafter] Could not load settings:', error);
+      console.warn('[Threads DraftCraft] Could not load settings:', error);
     }
   }
 
@@ -92,9 +92,9 @@ class ThreadsDrafter {
           const isExtensionMutation = mutation.addedNodes && 
             Array.from(mutation.addedNodes).some(node => 
               node.nodeType === Node.ELEMENT_NODE && 
-              (node.classList?.contains('threads-drafter-indicator') || 
-               node.classList?.contains('threads-drafter-count') ||
-               node.classList?.contains('threads-drafter-time'))
+              (node.classList?.contains('threads-draftcraft-indicator') || 
+               node.classList?.contains('threads-draftcraft-count') ||
+               node.classList?.contains('threads-draftcraft-time'))
             );
           
           if (isExtensionMutation) {
@@ -106,7 +106,7 @@ class ThreadsDrafter {
           
           dialogElements.forEach((dialog) => {
             // Check if dialog is already processed to prevent infinite loop
-            if (dialog.hasAttribute('data-threads-drafter-processed')) {
+            if (dialog.hasAttribute('data-threads-draftcraft-processed')) {
               return;
             }
             
@@ -135,7 +135,7 @@ class ThreadsDrafter {
     
     dialogElements.forEach((dialog) => {
       // Check if dialog is already processed to prevent infinite loop
-      if (dialog.hasAttribute('data-threads-drafter-processed')) {
+      if (dialog.hasAttribute('data-threads-draftcraft-processed')) {
         return;
       }
       
@@ -197,7 +197,7 @@ class ThreadsDrafter {
     const isDrafts = hasDraftsText && (hasDraftsIndicator || hasMultipleScheduledPosts);
     
     // if (isDrafts) {
-    //   console.log('[Threads Drafter] Confirmed drafts dialog with indicators');
+    //   console.log('[Threads DraftCraft] Confirmed drafts dialog with indicators');
     // }
     
     return isDrafts;
@@ -208,20 +208,20 @@ class ThreadsDrafter {
    */
   removeExistingEnhancements(dialogElement) {
     // Remove extension indicators
-    const indicators = dialogElement.querySelectorAll('.threads-drafter-indicator');
+    const indicators = dialogElement.querySelectorAll('.threads-draftcraft-indicator');
     indicators.forEach(indicator => indicator.remove());
     
     // Remove draft count indicators
-    const countIndicators = dialogElement.querySelectorAll('.threads-drafter-count');
+    const countIndicators = dialogElement.querySelectorAll('.threads-draftcraft-count');
     countIndicators.forEach(indicator => indicator.remove());
     
     // Remove time indicators and reset processed flags
-    const timeIndicators = dialogElement.querySelectorAll('.threads-drafter-time');
+    const timeIndicators = dialogElement.querySelectorAll('.threads-draftcraft-time');
     timeIndicators.forEach(indicator => indicator.remove());
     
     // Reset all processed flags on draft elements
-    const processedElements = dialogElement.querySelectorAll('[data-threads-drafter-time-added]');
-    processedElements.forEach(element => element.removeAttribute('data-threads-drafter-time-added'));
+    const processedElements = dialogElement.querySelectorAll('[data-threads-draftcraft-time-added]');
+    processedElements.forEach(element => element.removeAttribute('data-threads-draftcraft-time-added'));
   }
 
   /**
@@ -257,7 +257,7 @@ class ThreadsDrafter {
     }
 
     // Check if already processed to prevent infinite loop (unless forced)
-    if (!force && dialogElement.hasAttribute('data-threads-drafter-processed')) {
+    if (!force && dialogElement.hasAttribute('data-threads-draftcraft-processed')) {
       return;
     }
 
@@ -278,7 +278,7 @@ class ThreadsDrafter {
     this.enhanceUI(dialogElement);
 
     // Mark dialog as processed to prevent re-processing
-    dialogElement.setAttribute('data-threads-drafter-processed', 'true');
+    dialogElement.setAttribute('data-threads-draftcraft-processed', 'true');
   }
 
   /**
@@ -785,7 +785,7 @@ class ThreadsDrafter {
    */
   addExtensionIndicator(dialogElement) {
     // Remove any existing separate indicators
-    const existing = dialogElement.querySelector('.threads-drafter-indicator');
+    const existing = dialogElement.querySelector('.threads-draftcraft-indicator');
     if (existing) existing.remove();
 
     // Find the existing "Drafts" header
@@ -795,7 +795,7 @@ class ThreadsDrafter {
     }
 
     // Remove any existing integrated indicators
-    const existingStatus = draftsHeader.querySelector('.threads-drafter-status');
+    const existingStatus = draftsHeader.querySelector('.threads-draftcraft-status');
     if (existingStatus) existingStatus.remove();
 
     // Skip adding sort indicator if disabled
@@ -805,7 +805,7 @@ class ThreadsDrafter {
 
     // Create compact status indicator to integrate into header
     const statusIndicator = document.createElement('span');
-    statusIndicator.className = 'threads-drafter-status';
+    statusIndicator.className = 'threads-draftcraft-status';
     statusIndicator.innerHTML = `
       <span style="
         margin-left: 8px;
@@ -850,22 +850,22 @@ class ThreadsDrafter {
     if (!this.showTimeIndicators) {
       // If time indicators are disabled, remove any existing ones
       this.drafts.forEach((draft) => {
-        const existingIndicators = draft.element.querySelectorAll('.threads-drafter-time, .threads-drafter-time-subtle');
+        const existingIndicators = draft.element.querySelectorAll('.threads-draftcraft-time, .threads-draftcraft-time-subtle');
         existingIndicators.forEach(indicator => indicator.remove());
         
         // Also remove integrated time info
-        const existingTimeInfo = draft.element.querySelector('.threads-drafter-time-info');
+        const existingTimeInfo = draft.element.querySelector('.threads-draftcraft-time-info');
         if (existingTimeInfo) existingTimeInfo.remove();
         
         // Remove processed flag so it can be re-processed later
-        draft.element.removeAttribute('data-threads-drafter-time-added');
+        draft.element.removeAttribute('data-threads-draftcraft-time-added');
       });
       return;
     }
 
     this.drafts.forEach((draft) => {
       // Always remove existing indicators first, regardless of processed flag
-      const existingIndicators = draft.element.querySelectorAll('.threads-drafter-time, .threads-drafter-time-subtle');
+      const existingIndicators = draft.element.querySelectorAll('.threads-draftcraft-time, .threads-draftcraft-time-subtle');
       existingIndicators.forEach(indicator => indicator.remove());
 
       // Find existing "Posting" text within the draft element
@@ -883,12 +883,12 @@ class ThreadsDrafter {
       let postingTextNode = walker.nextNode();
       if (postingTextNode && postingTextNode.parentElement) {
         // Remove any existing integrated time info
-        const existingTimeInfo = postingTextNode.parentElement.querySelector('.threads-drafter-time-info');
+        const existingTimeInfo = postingTextNode.parentElement.querySelector('.threads-draftcraft-time-info');
         if (existingTimeInfo) existingTimeInfo.remove();
 
         // Create compact time info to integrate with posting text
         const timeInfo = document.createElement('span');
-        timeInfo.className = 'threads-drafter-time-info';
+        timeInfo.className = 'threads-draftcraft-time-info';
         timeInfo.style.cssText = `
           margin-left: 6px;
           color: #1DA1F2;
@@ -905,7 +905,7 @@ class ThreadsDrafter {
       } else {
         // Fallback: if no "Posting" text found, add a subtle indicator at the top
         const timeIndicator = document.createElement('div');
-        timeIndicator.className = 'threads-drafter-time-subtle';
+        timeIndicator.className = 'threads-draftcraft-time-subtle';
         timeIndicator.innerHTML = `
           <div style="
             color: #1DA1F2;
@@ -921,7 +921,7 @@ class ThreadsDrafter {
       }
       
       // Mark this element as processed to prevent future duplicates
-      draft.element.setAttribute('data-threads-drafter-time-added', 'true');
+      draft.element.setAttribute('data-threads-draftcraft-time-added', 'true');
     });
   }
 
@@ -930,13 +930,13 @@ class ThreadsDrafter {
    */
   addDraftCount(dialogElement) {
     // Remove any existing separate count indicators
-    const existing = dialogElement.querySelector('.threads-drafter-count');
+    const existing = dialogElement.querySelector('.threads-draftcraft-count');
     if (existing) existing.remove();
 
     // Always remove existing integrated count badges
     const draftsHeader = dialogElement.querySelector('h1 span');
     if (draftsHeader) {
-      const existingCount = draftsHeader.querySelector('.threads-drafter-count-badge');
+      const existingCount = draftsHeader.querySelector('.threads-draftcraft-count-badge');
       if (existingCount) existingCount.remove();
     }
 
@@ -948,13 +948,13 @@ class ThreadsDrafter {
 
     // Verify we have the drafts header (already found above)
     if (!draftsHeader || !draftsHeader.textContent.includes('Drafts')) {
-      // console.warn('[Threads Drafter] Could not find Drafts header for count integration');
+      // console.warn('[Threads DraftCraft] Could not find Drafts header for count integration');
       return;
     }
 
     // Create compact count badge to integrate into header
     const countBadge = document.createElement('span');
-    countBadge.className = 'threads-drafter-count-badge';
+    countBadge.className = 'threads-draftcraft-count-badge';
     countBadge.innerHTML = `
       <span style="
         margin-left: 8px;
@@ -997,4 +997,4 @@ class ThreadsDrafter {
 }
 
 // Initialize the extension when the script loads
-const threadsDrafter = new ThreadsDrafter();
+const threadsDraftCraft = new ThreadsDraftCraft();
