@@ -400,10 +400,18 @@ class ThreadsDraftCraft {
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayPattern = dayNames.join('|');
     
+    // Define month names and short day names for date matching
+    const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const monthPattern = monthNames.join('|');
+    const dayNamesShort = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const dayPatternShort = dayNamesShort.join('|');
+    
     // Check for explicit time patterns (same as extractScheduledTime)
     const timePatterns = [
       // Match "today/tomorrow/dayname at HH:MM AM/PM" with optional timezone
       new RegExp(`(?:posting\\s+)?(?:today|tomorrow|${dayPattern})\\s+at\\s+\\d{1,2}:\\d{2}\\s*(?:am|pm|AM|PM)(?:\\s+[A-Z]{3}[+-]?\\d{1,2})?`, 'i'),
+      // Match "Posting on Mon, Sep 1 at 4:17 PM GMT+2" format
+      new RegExp(`posting\\s+on\\s+(?:${dayPatternShort}|${dayPattern}),?\\s+(?:${monthPattern})\\s+\\d{1,2}\\s+at\\s+\\d{1,2}:\\d{2}\\s*(?:am|pm|AM|PM)(?:\\s+[A-Z]{3}[+-]?\\d{1,2})?`, 'i'),
       // Fallback for just the time with optional timezone
       /\d{1,2}:\d{2}\s*(?:am|pm|AM|PM)(?:\s+[A-Z]{3}[+-]?\d{1,2})?/i
     ];
@@ -543,8 +551,16 @@ class ThreadsDraftCraft {
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayPattern = dayNames.join('|');
     
+    // Define month names and short day names for date matching
+    const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const monthPattern = monthNames.join('|');
+    const dayNamesShort = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const dayPatternShort = dayNamesShort.join('|');
+    
     // Enhanced patterns to match times with day names and optional timezone info
     const timePatterns = [
+      // Match "Posting on Mon, Sep 1 at 4:17 PM GMT+2" format
+      new RegExp(`posting\\s+on\\s+(${dayPatternShort}|${dayPattern}),?\\s+(${monthPattern})\\s+(\\d{1,2})\\s+at\\s+(\\d{1,2}):(\\d{2})\\s*(am|pm|AM|PM)(?:\\s+([A-Z]{3}[+-]?\\d{1,2}))?`, 'i'),
       // Match "today/tomorrow/dayname at HH:MM AM/PM" with optional timezone (case-insensitive)
       new RegExp(`(?:posting\\s+)?(?:today|tomorrow|${dayPattern})\\s+at\\s+(\\d{1,2}):(\\d{2})\\s*(am|pm|AM|PM)(?:\\s+[A-Z]{3}[+-]?\\d{1,2})?`, 'i'),
       // Fallback for just the time with optional timezone (case-insensitive)
@@ -553,18 +569,59 @@ class ThreadsDraftCraft {
     
     let timeMatch = null;
     let dayMatch = null;
+    let patternIndex = -1;
     
-    for (const pattern of timePatterns) {
+    for (let i = 0; i < timePatterns.length; i++) {
+      const pattern = timePatterns[i];
       timeMatch = textContent.match(pattern);
       if (timeMatch) {
-        // Also capture which day was mentioned
-        const dayRegex = new RegExp(`(today|tomorrow|${dayPattern})`, 'i');
-        dayMatch = textContent.match(dayRegex);
+        patternIndex = i;
+        // Also capture which day was mentioned (for non-specific date patterns)
+        if (i > 0) {
+          const dayRegex = new RegExp(`(today|tomorrow|${dayPattern})`, 'i');
+          dayMatch = textContent.match(dayRegex);
+        }
         break;
       }
     }
     
     if (timeMatch) {
+      // Handle "Posting on Mon, Sep 1 at 4:17 PM GMT+2" format (first pattern)
+      if (patternIndex === 0) {
+        const dayName = timeMatch[1];
+        const monthName = timeMatch[2].toLowerCase();
+        const dateNum = parseInt(timeMatch[3]);
+        const hours = parseInt(timeMatch[4]);
+        const minutes = parseInt(timeMatch[5]);
+        const isPM = timeMatch[6].toLowerCase() === 'pm';
+        const timezone = timeMatch[7];
+        
+        // Convert month name to number
+        const monthIndex = monthNames.indexOf(monthName);
+        if (monthIndex === -1) return null; // Invalid month
+        
+        // Convert to 24-hour format
+        let hour24 = hours;
+        if (isPM && hours !== 12) {
+          hour24 += 12;
+        } else if (!isPM && hours === 12) {
+          hour24 = 0;
+        }
+        
+        // Create date object with specific date
+        const currentYear = new Date().getFullYear();
+        const scheduledDate = new Date(currentYear, monthIndex, dateNum, hour24, minutes, 0, 0);
+        
+        // If the date is in the past, assume it's for next year
+        const now = new Date();
+        if (scheduledDate < now) {
+          scheduledDate.setFullYear(currentYear + 1);
+        }
+        
+        return scheduledDate;
+      }
+      
+      // Handle existing patterns (today/tomorrow/dayname format)
       const hours = parseInt(timeMatch[1]);
       const minutes = parseInt(timeMatch[2]);
       const isPM = timeMatch[3].toLowerCase() === 'pm';
