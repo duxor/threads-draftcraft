@@ -101,7 +101,8 @@ class ThreadsDraftCraft {
               (node.classList?.contains('threads-draftcraft-indicator') ||
                 node.classList?.contains('threads-draftcraft-count') ||
                 node.classList?.contains('threads-draftcraft-time') ||
-                node.classList?.contains('threads-draftcraft-date-divider'))
+                node.classList?.contains('threads-draftcraft-date-divider') ||
+                node.classList?.contains('threads-draftcraft-date-count'))
             );
 
           if (isExtensionMutation) {
@@ -931,6 +932,15 @@ class ThreadsDraftCraft {
     const existing = container.querySelectorAll('.threads-draftcraft-date-divider');
     existing.forEach(el => el.remove());
 
+    // Build counts per date
+    const dateCounts = new Map();
+    this.drafts.forEach((d) => {
+      const dt = d.scheduledTime instanceof Date ? d.scheduledTime : null;
+      if (!dt) return;
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      dateCounts.set(key, (dateCounts.get(key) || 0) + 1);
+    });
+
     let lastDateKey = null;
 
     this.drafts.forEach((draft) => {
@@ -942,6 +952,9 @@ class ThreadsDraftCraft {
         // Create divider element
         const divider = document.createElement('div');
         divider.className = 'threads-draftcraft-date-divider';
+
+        const header = document.createElement('div');
+        header.className = 'threads-draftcraft-date-header';
 
         const label = document.createElement('div');
         label.className = 'threads-draftcraft-date-label';
@@ -966,10 +979,20 @@ class ThreadsDraftCraft {
         }
         label.textContent = prefix ? `${prefix}, ${formattedDate}` : formattedDate;
 
+        // Create count badge
+        const count = dateCounts.get(key) || 0;
+        const countEl = document.createElement('span');
+        countEl.className = 'threads-draftcraft-date-count';
+        countEl.textContent = `${count}`;
+        countEl.setAttribute('aria-label', `${count} scheduled ${count === 1 ? 'post' : 'posts'} on ${label.textContent}`);
+
+        header.appendChild(label);
+        header.appendChild(countEl);
+
         const line = document.createElement('div');
         line.className = 'threads-draftcraft-date-line';
 
-        divider.appendChild(label);
+        divider.appendChild(header);
         divider.appendChild(line);
 
         // Insert before the first draft of this date
