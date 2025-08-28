@@ -60,10 +60,10 @@
   bottom: 0;
   width: 3px;
   background: linear-gradient(
-    to bottom,
-    #1DA1F2,
-    #1991DB,
-    #1580C4
+          to bottom,
+          #1DA1F2,
+          #1991DB,
+          #1580C4
   );
   border-radius: 0 2px 2px 0;
   opacity: 0.8;
@@ -138,10 +138,10 @@
   width: 100%;
   height: 100%;
   background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(29, 161, 242, 0.2),
-    transparent
+          90deg,
+          transparent,
+          rgba(29, 161, 242, 0.2),
+          transparent
   );
   animation: threads-draftcraft-shimmer 1.5s infinite;
 }
@@ -231,11 +231,11 @@
     border-color: #333;
     color: #fff;
   }
-  
+
   .threads-draftcraft-draft-container:hover {
     background: rgba(29, 161, 242, 0.1);
   }
-  
+
   .threads-draftcraft-toggle {
     background: #444;
   }
@@ -250,7 +250,7 @@
     padding: 6px 8px;
     margin: 6px;
   }
-  
+
   .threads-draftcraft-settings {
     padding: 10px;
     margin: 6px;
@@ -272,7 +272,7 @@
     background: #000;
     color: #fff;
   }
-  
+
   .threads-draftcraft-time > div {
     border: 2px solid #1DA1F2;
     background: #fff;
@@ -388,36 +388,16 @@
 .threads-draftcraft-date-divider {
   width: 100%;
   display: block;
-  padding: 6px 0 0;
-  margin: 12px 0 6px;
+  padding: 8px 0 0;
   box-sizing: border-box;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.threads-draftcraft-date-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
 }
 
 .threads-draftcraft-date-label {
   font-size: 12px;
   font-weight: 600;
   color: #8899A6; /* neutral gray to fit both light/dark */
-}
-
-.threads-draftcraft-date-count {
-  font-size: 11px;
-  line-height: 1;
-  color: #556371;
-  background: rgba(136, 153, 166, 0.18);
-  border: 1px solid rgba(136, 153, 166, 0.28);
-  border-radius: 10px;
-  padding: 1px 6px;
-  min-width: 14px;
-  text-align: center;
+  padding: 0 8px;
 }
 
 .threads-draftcraft-date-line {

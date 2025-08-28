@@ -11,7 +11,7 @@ class ThreadsDraftCraft {
     this.showTimeIndicators = true;
     this.showDraftCount = true;
     this.showSortIndicator = true;
-    
+
     // Initialize the extension
     this.init();
   }
@@ -22,10 +22,10 @@ class ThreadsDraftCraft {
   async init() {
     // Load settings from storage
     await this.loadSettings();
-    
+
     // Start observing for drafts dialog
     this.observeForDraftsDialog();
-    
+
     // Listen for settings updates
     this.setupMessageListener();
   }
@@ -89,27 +89,28 @@ class ThreadsDraftCraft {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList') {
           // Skip mutations caused by our own extension elements
-          const isExtensionMutation = mutation.addedNodes && 
-            Array.from(mutation.addedNodes).some(node => 
-              node.nodeType === Node.ELEMENT_NODE && 
-              (node.classList?.contains('threads-draftcraft-indicator') || 
-               node.classList?.contains('threads-draftcraft-count') ||
-               node.classList?.contains('threads-draftcraft-time'))
+          const isExtensionMutation = mutation.addedNodes &&
+            Array.from(mutation.addedNodes).some(node =>
+              node.nodeType === Node.ELEMENT_NODE &&
+              (node.classList?.contains('threads-draftcraft-indicator') ||
+                node.classList?.contains('threads-draftcraft-count') ||
+                node.classList?.contains('threads-draftcraft-time') ||
+                node.classList?.contains('threads-draftcraft-date-divider'))
             );
-          
+
           if (isExtensionMutation) {
             return; // Skip processing this mutation
           }
-          
+
           // Look for drafts dialog or modal
           const dialogElements = document.querySelectorAll('[role="dialog"], .x1n2onr6');
-          
+
           dialogElements.forEach((dialog) => {
             // Check if dialog is already processed to prevent infinite loop
             if (dialog.hasAttribute('data-threads-draftcraft-processed')) {
               return;
             }
-            
+
             if (this.isDraftsDialog(dialog)) {
               this.processDrafts(dialog);
             }
@@ -132,13 +133,13 @@ class ThreadsDraftCraft {
    */
   checkForExistingDraftsDialog() {
     const dialogElements = document.querySelectorAll('[role="dialog"], .x1n2onr6');
-    
+
     dialogElements.forEach((dialog) => {
       // Check if dialog is already processed to prevent infinite loop
       if (dialog.hasAttribute('data-threads-draftcraft-processed')) {
         return;
       }
-      
+
       if (this.isDraftsDialog(dialog)) {
         this.processDrafts(dialog);
       }
@@ -150,7 +151,7 @@ class ThreadsDraftCraft {
    */
   isDraftsDialog(element) {
     const textContent = element.textContent.toLowerCase();
-    
+
     // First, check for edit/compose dialog indicators - if found, this is NOT a drafts dialog
     const editIndicators = [
       'new thread',
@@ -164,13 +165,13 @@ class ThreadsDraftCraft {
       'add to thread',
       'anyone can reply'
     ];
-    
+
     for (const indicator of editIndicators) {
       if (textContent.includes(indicator)) {
         return false;
       }
     }
-    
+
     // Check for specific drafts dialog indicators
     const draftsIndicators = [
       'posting tomorrow at',
@@ -178,7 +179,7 @@ class ThreadsDraftCraft {
       'posting in',
       'scheduled for'
     ];
-    
+
     let hasDraftsIndicator = false;
     for (const indicator of draftsIndicators) {
       if (textContent.includes(indicator)) {
@@ -186,20 +187,20 @@ class ThreadsDraftCraft {
         break;
       }
     }
-    
+
     // Must have "drafts" text AND scheduling indicators to be considered a drafts dialog
     const hasDraftsText = textContent.includes('draft');
-    
+
     // Additional check: look for multiple scheduled posts pattern
     const hasMultipleScheduledPosts = (textContent.match(/posting (today|tomorrow) at/g) || []).length > 1;
-    
+
     // Only return true if we have clear drafts indicators and no edit indicators
     const isDrafts = hasDraftsText && (hasDraftsIndicator || hasMultipleScheduledPosts);
-    
+
     // if (isDrafts) {
     //   console.log('[Threads DraftCraft] Confirmed drafts dialog with indicators');
     // }
-    
+
     return isDrafts;
   }
 
@@ -210,15 +211,19 @@ class ThreadsDraftCraft {
     // Remove extension indicators
     const indicators = dialogElement.querySelectorAll('.threads-draftcraft-indicator');
     indicators.forEach(indicator => indicator.remove());
-    
+
     // Remove draft count indicators
     const countIndicators = dialogElement.querySelectorAll('.threads-draftcraft-count');
     countIndicators.forEach(indicator => indicator.remove());
-    
+
     // Remove time indicators and reset processed flags
     const timeIndicators = dialogElement.querySelectorAll('.threads-draftcraft-time');
     timeIndicators.forEach(indicator => indicator.remove());
-    
+
+    // Remove date dividers
+    const dateDividers = dialogElement.querySelectorAll('.threads-draftcraft-date-divider');
+    dateDividers.forEach(divider => divider.remove());
+
     // Reset all processed flags on draft elements
     const processedElements = dialogElement.querySelectorAll('[data-threads-draftcraft-time-added]');
     processedElements.forEach(element => element.removeAttribute('data-threads-draftcraft-time-added'));
@@ -236,7 +241,7 @@ class ThreadsDraftCraft {
 
     // Sort drafts by their original order
     const originalDrafts = [...this.drafts].sort((a, b) => a.originalOrder - b.originalOrder);
-    
+
     // Restore elements to original DOM order
     originalDrafts.forEach((draft) => {
       container.appendChild(draft.element);
@@ -286,13 +291,13 @@ class ThreadsDraftCraft {
    */
   findDraftsDialog() {
     const dialogs = document.querySelectorAll('[role="dialog"], .x1n2onr6');
-    
+
     for (let dialog of dialogs) {
       if (this.isDraftsDialog(dialog)) {
         return dialog;
       }
     }
-    
+
     return null;
   }
 
@@ -344,10 +349,10 @@ class ThreadsDraftCraft {
     if (draftElements.length === 0) {
       const allDivs = dialogElement.querySelectorAll('div');
       const foundDrafts = new Set(); // Prevent duplicates
-      
+
       allDivs.forEach(div => {
         const text = div.textContent.trim();
-        
+
         // Enhanced detection: look for any scheduleable content
         if (text.length > 20 && text.length < 500 && this.hasScheduleableContent(div)) {
           // Make sure this isn't a child of an already found element
@@ -358,13 +363,13 @@ class ThreadsDraftCraft {
               break;
             }
           }
-          
+
           if (!isChild) {
             foundDrafts.add(div);
           }
         }
       });
-      
+
       draftElements.push(...Array.from(foundDrafts));
     }
 
@@ -391,21 +396,21 @@ class ThreadsDraftCraft {
    */
   hasScheduleableContent(element) {
     const text = element.textContent.toLowerCase().trim();
-    
+
     if (!text || text.length < 5) {
       return false;
     }
-    
+
     // Define day names for matching
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayPattern = dayNames.join('|');
-    
+
     // Define month names and short day names for date matching
     const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     const monthPattern = monthNames.join('|');
     const dayNamesShort = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     const dayPatternShort = dayNamesShort.join('|');
-    
+
     // Check for explicit time patterns (same as extractScheduledTime)
     const timePatterns = [
       // Match "today/tomorrow/dayname at HH:MM AM/PM" with optional timezone
@@ -415,14 +420,14 @@ class ThreadsDraftCraft {
       // Fallback for just the time with optional timezone
       /\d{1,2}:\d{2}\s*(?:am|pm|AM|PM)(?:\s+[A-Z]{3}[+-]?\d{1,2})?/i
     ];
-    
+
     // Check for explicit time patterns
     for (const pattern of timePatterns) {
       if (pattern.test(text)) {
         return true;
       }
     }
-    
+
     // Check for day name patterns (enhanced from extractScheduledTime)
     for (const dayName of dayNames) {
       const dayPatterns = [
@@ -440,7 +445,7 @@ class ThreadsDraftCraft {
         // Also check for day names at the beginning of sentences or after punctuation
         new RegExp(`(^|\\.|!|\\?)\\s*${dayName}\\b`, 'i')
       ];
-      
+
       for (const pattern of dayPatterns) {
         if (typeof pattern === 'string') {
           if (text.includes(pattern)) {
@@ -454,7 +459,7 @@ class ThreadsDraftCraft {
         }
       }
     }
-    
+
     // Check for other scheduling indicators
     const schedulingIndicators = [
       'posting today',
@@ -467,7 +472,7 @@ class ThreadsDraftCraft {
       /\btoday\b/,
       /\btomorrow\b/
     ];
-    
+
     for (const indicator of schedulingIndicators) {
       if (typeof indicator === 'string') {
         if (text.includes(indicator)) {
@@ -480,7 +485,7 @@ class ThreadsDraftCraft {
         }
       }
     }
-    
+
     return false;
   }
 
@@ -513,7 +518,7 @@ class ThreadsDraftCraft {
   extractDraftContent(element) {
     // Try to find the main text content, avoiding UI elements
     const textNodes = [];
-    
+
     const walker = document.createTreeWalker(
       element,
       NodeFilter.SHOW_TEXT,
@@ -543,20 +548,20 @@ class ThreadsDraftCraft {
   extractScheduledTime(element) {
     const originalText = element.textContent;
     const textContent = originalText.toLowerCase();
-    
+
     // Try to extract actual time strings from Threads.com draft content
     // Look for patterns like "today at 2:14 pm", "tomorrow at 12:36 PM", "Sunday at 3:00 PM", etc.
-    
+
     // Define day names for matching
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayPattern = dayNames.join('|');
-    
+
     // Define month names and short day names for date matching
     const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     const monthPattern = monthNames.join('|');
     const dayNamesShort = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     const dayPatternShort = dayNamesShort.join('|');
-    
+
     // Enhanced patterns to match times with day names and optional timezone info
     const timePatterns = [
       // Match "Posting on Mon, Sep 1 at 4:17 PM GMT+2" format
@@ -566,11 +571,11 @@ class ThreadsDraftCraft {
       // Fallback for just the time with optional timezone (case-insensitive)
       /(\d{1,2}):(\d{2})\s*(am|pm|AM|PM)(?:\s+[A-Z]{3}[+-]?\d{1,2})?/i
     ];
-    
+
     let timeMatch = null;
     let dayMatch = null;
     let patternIndex = -1;
-    
+
     for (let i = 0; i < timePatterns.length; i++) {
       const pattern = timePatterns[i];
       timeMatch = textContent.match(pattern);
@@ -584,7 +589,7 @@ class ThreadsDraftCraft {
         break;
       }
     }
-    
+
     if (timeMatch) {
       // Handle "Posting on Mon, Sep 1 at 4:17 PM GMT+2" format (first pattern)
       if (patternIndex === 0) {
@@ -595,11 +600,11 @@ class ThreadsDraftCraft {
         const minutes = parseInt(timeMatch[5]);
         const isPM = timeMatch[6].toLowerCase() === 'pm';
         const timezone = timeMatch[7];
-        
+
         // Convert month name to number
         const monthIndex = monthNames.indexOf(monthName);
         if (monthIndex === -1) return null; // Invalid month
-        
+
         // Convert to 24-hour format
         let hour24 = hours;
         if (isPM && hours !== 12) {
@@ -607,25 +612,25 @@ class ThreadsDraftCraft {
         } else if (!isPM && hours === 12) {
           hour24 = 0;
         }
-        
+
         // Create date object with specific date
         const currentYear = new Date().getFullYear();
         const scheduledDate = new Date(currentYear, monthIndex, dateNum, hour24, minutes, 0, 0);
-        
+
         // If the date is in the past, assume it's for next year
         const now = new Date();
         if (scheduledDate < now) {
           scheduledDate.setFullYear(currentYear + 1);
         }
-        
+
         return scheduledDate;
       }
-      
+
       // Handle existing patterns (today/tomorrow/dayname format)
       const hours = parseInt(timeMatch[1]);
       const minutes = parseInt(timeMatch[2]);
       const isPM = timeMatch[3].toLowerCase() === 'pm';
-      
+
       // Convert to 24-hour format
       let hour24 = hours;
       if (isPM && hours !== 12) {
@@ -633,15 +638,15 @@ class ThreadsDraftCraft {
       } else if (!isPM && hours === 12) {
         hour24 = 0;
       }
-      
+
       // Create date object
       const now = new Date();
       const scheduledDate = new Date(now);
-      
+
       // Determine the target date based on day mentioned
       if (dayMatch) {
         const dayIndicator = dayMatch[1].toLowerCase();
-        
+
         if (dayIndicator === 'today') {
           // Keep current date
         } else if (dayIndicator === 'tomorrow') {
@@ -650,28 +655,28 @@ class ThreadsDraftCraft {
           // Handle specific day names
           const targetDayIndex = dayNames.indexOf(dayIndicator);
           const currentDayIndex = now.getDay();
-          
+
           // Calculate days until target day
           let daysUntil = targetDayIndex - currentDayIndex;
           if (daysUntil < 0) {
             daysUntil += 7; // Next week if day has passed
           }
-          
+
           scheduledDate.setDate(now.getDate() + daysUntil);
         }
       }
-      
+
       scheduledDate.setHours(hour24, minutes, 0, 0);
-      
+
       // If the time has already passed today and no specific day was mentioned, schedule for tomorrow
       if (!dayMatch && scheduledDate <= now) {
         scheduledDate.setDate(now.getDate() + 1);
       }
       return scheduledDate;
     }
-    
+
     // Fallback patterns for relative time indicators
-    
+
     // Check for specific day names without specific time (Sunday, Monday, etc.)
     for (const dayName of dayNames) {
       // More comprehensive pattern matching for day names
@@ -690,7 +695,7 @@ class ThreadsDraftCraft {
         // Also check for day names at the beginning of sentences or after punctuation
         new RegExp(`(^|\\.|!|\\?)\\s*${dayName}\\b`, 'i')
       ];
-      
+
       let dayFound = false;
       for (const pattern of dayPatterns) {
         if (typeof pattern === 'string') {
@@ -706,20 +711,20 @@ class ThreadsDraftCraft {
           }
         }
       }
-      
+
       if (dayFound) {
         const now = new Date();
         const scheduledDate = new Date(now);
-        
+
         const targetDayIndex = dayNames.indexOf(dayName);
         const currentDayIndex = now.getDay();
-        
+
         // Calculate days until target day
         let daysUntil = targetDayIndex - currentDayIndex;
         if (daysUntil < 0) {
           daysUntil += 7; // Next week if day has passed
         }
-        
+
         scheduledDate.setDate(now.getDate() + daysUntil);
         // Set a random time during business hours for the day
         const randomHour = Math.floor(Math.random() * 12) + 9; // 9 AM to 8 PM
@@ -728,38 +733,38 @@ class ThreadsDraftCraft {
         return scheduledDate;
       }
     }
-    
+
     // Check for "today" indicators without specific time
     if (textContent.includes('posting today') || textContent.includes('today at')) {
       // Generate times for today (next few hours)
       const hoursFromNow = Math.floor(Math.random() * 8) + 1; // 1-8 hours from now
       return new Date(Date.now() + hoursFromNow * 60 * 60 * 1000);
     }
-    
+
     // Check for "tomorrow" indicators without specific time
     if (textContent.includes('posting tomorrow') || textContent.includes('tomorrow at')) {
       // Generate times for tomorrow (24+ hours from now)
       const hoursFromNow = Math.floor(Math.random() * 12) + 24; // 24-35 hours from now
       return new Date(Date.now() + hoursFromNow * 60 * 60 * 1000);
     }
-    
+
     // Check for "in X hours" or "in X days" patterns
     const inHoursMatch = textContent.match(/in (\d+) hours?/);
     if (inHoursMatch) {
       const hours = parseInt(inHoursMatch[1]);
       return new Date(Date.now() + hours * 60 * 60 * 1000);
     }
-    
+
     const inDaysMatch = textContent.match(/in (\d+) days?/);
     if (inDaysMatch) {
       const days = parseInt(inDaysMatch[1]);
       return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
     }
-    
+
     // Final fallback: assign times based on position to maintain some order
-    const index = parseInt(element.getAttribute('data-draft-index')) || 
-                  Array.from(element.parentElement?.children || []).indexOf(element) || 0;
-    
+    const index = parseInt(element.getAttribute('data-draft-index')) ||
+      Array.from(element.parentElement?.children || []).indexOf(element) || 0;
+
     // Create chronologically ordered times as fallback
     const mockTimes = [
       new Date(Date.now() + 2 * 60 * 60 * 1000),  // 2 hours from now
@@ -792,7 +797,7 @@ class ThreadsDraftCraft {
       // Calculate exact minutes and seconds for precise display
       const minutes = Math.floor(diff / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      
+
       if (minutes > 0) {
         return `in ${minutes} minute${minutes > 1 ? 's' : ''}`;
       } else if (seconds > 0) {
@@ -829,6 +834,9 @@ class ThreadsDraftCraft {
 
     // Reorder drafts in the DOM
     this.reorderDraftElements(dialogElement);
+
+    // Add date dividers between different days
+    this.addDateDividers();
 
     // Add scheduled time indicators
     this.addTimeIndicators();
@@ -901,6 +909,58 @@ class ThreadsDraftCraft {
   }
 
   /**
+   * Insert a date divider before the first draft of each calendar date
+   */
+  addDateDividers() {
+    if (this.drafts.length === 0) return;
+
+    const firstEl = this.drafts[0].element;
+    if (!firstEl) return;
+    const container = firstEl.parentElement;
+    if (!container) return;
+
+    // Remove any existing date dividers (safety)
+    const existing = container.querySelectorAll('.threads-draftcraft-date-divider');
+    existing.forEach(el => el.remove());
+
+    let lastDateKey = null;
+
+    this.drafts.forEach((draft) => {
+      const dt = draft.scheduledTime instanceof Date ? draft.scheduledTime : null;
+      if (!dt) return; // Only for scheduled items
+
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      if (key !== lastDateKey) {
+        // Create divider element
+        const divider = document.createElement('div');
+        divider.className = 'threads-draftcraft-date-divider';
+
+        const label = document.createElement('div');
+        label.className = 'threads-draftcraft-date-label';
+        try {
+          label.textContent = dt.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        } catch (e) {
+          // Fallback formatting
+          label.textContent = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        }
+
+        const line = document.createElement('div');
+        line.className = 'threads-draftcraft-date-line';
+
+        divider.appendChild(label);
+        divider.appendChild(line);
+
+        // Insert before the first draft of this date
+        if (draft.element && draft.element.parentElement === container) {
+          container.insertBefore(divider, draft.element);
+        }
+
+        lastDateKey = key;
+      }
+    });
+  }
+
+  /**
    * Add time indicators to each draft (integrated into existing "Posting" sections)
    */
   addTimeIndicators() {
@@ -909,11 +969,11 @@ class ThreadsDraftCraft {
       this.drafts.forEach((draft) => {
         const existingIndicators = draft.element.querySelectorAll('.threads-draftcraft-time, .threads-draftcraft-time-subtle');
         existingIndicators.forEach(indicator => indicator.remove());
-        
+
         // Also remove integrated time info
         const existingTimeInfo = draft.element.querySelector('.threads-draftcraft-time-info');
         if (existingTimeInfo) existingTimeInfo.remove();
-        
+
         // Remove processed flag so it can be re-processed later
         draft.element.removeAttribute('data-threads-draftcraft-time-added');
       });
@@ -925,13 +985,25 @@ class ThreadsDraftCraft {
       const existingIndicators = draft.element.querySelectorAll('.threads-draftcraft-time, .threads-draftcraft-time-subtle');
       existingIndicators.forEach(indicator => indicator.remove());
 
+      // Also remove any integrated time info within this draft
+      const integratedInfos = draft.element.querySelectorAll('.threads-draftcraft-time-info');
+      integratedInfos.forEach(info => info.remove());
+
+      // If any ancestor is already marked, skip to avoid duplicate flags on parent and child
+      const ancestorProcessed = draft.element.parentElement ? draft.element.parentElement.closest('[data-threads-draftcraft-time-added]') : null;
+      if (ancestorProcessed) {
+        // Ensure this child is clean and not marked
+        draft.element.removeAttribute('data-threads-draftcraft-time-added');
+        return;
+      }
+
       // Find existing "Posting" text within the draft element
       const walker = document.createTreeWalker(
         draft.element,
         NodeFilter.SHOW_TEXT,
         {
           acceptNode: function(node) {
-            return node.textContent.toLowerCase().includes('posting') ? 
+            return node.textContent.toLowerCase().includes('posting') ?
               NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
           }
         }
@@ -976,7 +1048,7 @@ class ThreadsDraftCraft {
         `;
         draft.element.insertBefore(timeIndicator, draft.element.firstChild);
       }
-      
+
       // Mark this element as processed to prevent future duplicates
       draft.element.setAttribute('data-threads-draftcraft-time-added', 'true');
     });
@@ -1044,7 +1116,7 @@ class ThreadsDraftCraft {
 
     // Sort by earliest
     scheduledDrafts.sort((a, b) => a.scheduledTime - b.scheduledTime);
-    
+
     const next = scheduledDrafts[0];
     return {
       content: next.content.substring(0, 50) + '...',
