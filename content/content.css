@@ -382,3 +382,46 @@
   margin: 8px;
   font-size: 12px;
 }
+
+
+/* Date Divider Styles */
+.threads-draftcraft-date-divider {
+  width: 100%;
+  display: block;
+  padding: 6px 0 0;
+  margin: 12px 0 6px;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.threads-draftcraft-date-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.threads-draftcraft-date-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8899A6; /* neutral gray to fit both light/dark */
+}
+
+.threads-draftcraft-date-count {
+  font-size: 11px;
+  line-height: 1;
+  color: #556371;
+  background: rgba(136, 153, 166, 0.18);
+  border: 1px solid rgba(136, 153, 166, 0.28);
+  border-radius: 10px;
+  padding: 1px 6px;
+  min-width: 14px;
+  text-align: center;
+}
+
+.threads-draftcraft-date-line {
+  height: 1px;
+  width: 100%;
+  background: rgba(136, 153, 166, 0.45); /* subtle full-width line */
+}
