@@ -945,12 +945,26 @@ class ThreadsDraftCraft {
 
         const label = document.createElement('div');
         label.className = 'threads-draftcraft-date-label';
+        let formattedDate = '';
         try {
-          label.textContent = dt.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          formattedDate = dt.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         } catch (e) {
           // Fallback formatting
-          label.textContent = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+          formattedDate = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
         }
+        // Determine Today/Tomorrow prefix
+        const now = new Date();
+        const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        const tomorrowKey = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+        let prefix = '';
+        if (key === todayKey) {
+          prefix = 'Today';
+        } else if (key === tomorrowKey) {
+          prefix = 'Tomorrow';
+        }
+        label.textContent = prefix ? `${prefix}, ${formattedDate}` : formattedDate;
 
         const line = document.createElement('div');
         line.className = 'threads-draftcraft-date-line';
