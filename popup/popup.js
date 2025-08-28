@@ -10,7 +10,8 @@ class ThreadsDraftCraftPopup {
       autoSort: true,
       showTimeIndicators: true,
       showDraftCount: true,
-      showSortIndicator: true
+      showSortIndicator: true,
+      showDateDivider: true
     };
 
     this.init();
@@ -48,7 +49,8 @@ class ThreadsDraftCraftPopup {
         autoSort: true,
         showTimeIndicators: true,
         showDraftCount: true,
-        showSortIndicator: true
+        showSortIndicator: true,
+        showDateDivider: true
       });
 
       this.settings = { ...this.settings, ...result };
@@ -105,6 +107,14 @@ class ThreadsDraftCraftPopup {
     if (showDraftCount) {
       showDraftCount.addEventListener('change', (e) => {
         this.handleDraftCountToggle(e.target.checked);
+      });
+    }
+
+    // Show date divider toggle
+    const showDateDivider = document.getElementById('showDateDivider');
+    if (showDateDivider) {
+      showDateDivider.addEventListener('change', (e) => {
+        this.handleDateDividerToggle(e.target.checked);
       });
     }
 
@@ -176,6 +186,11 @@ class ThreadsDraftCraftPopup {
    * Update UI elements with current settings
    */
   updateUI() {
+    // Date divider
+    const showDateDivider = document.getElementById('showDateDivider');
+    if (showDateDivider) {
+      showDateDivider.checked = this.settings.showDateDivider;
+    }
     // Settings
     const sortOrder = document.getElementById('sortOrder');
     if (sortOrder) {
@@ -372,6 +387,28 @@ class ThreadsDraftCraftPopup {
     }
 
     this.showSuccess(enabled ? 'Sort indicator enabled' : 'Sort indicator disabled');
+  }
+
+  /**
+   * Handle date divider toggle
+   */
+  async handleDateDividerToggle(enabled) {
+    this.settings.showDateDivider = enabled;
+    await this.saveSettings();
+
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url.includes('threads.com')) {
+        await chrome.tabs.sendMessage(tab.id, {
+          action: 'toggleDateDivider',
+          enabled: enabled
+        });
+      }
+    } catch (error) {
+      console.error('[Threads DraftCraft] Failed to toggle date divider:', error);
+    }
+
+    this.showSuccess(enabled ? 'Date divider enabled' : 'Date divider disabled');
   }
 
   /**

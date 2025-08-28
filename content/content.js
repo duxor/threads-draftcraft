@@ -11,6 +11,7 @@ class ThreadsDraftCraft {
     this.showTimeIndicators = true;
     this.showDraftCount = true;
     this.showSortIndicator = true;
+    this.showDateDivider = true;
 
     // Initialize the extension
     this.init();
@@ -40,13 +41,15 @@ class ThreadsDraftCraft {
         autoSort: true,
         showTimeIndicators: true,
         showDraftCount: true,
-        showSortIndicator: true
+        showSortIndicator: true,
+        showDateDivider: true
       });
       this.sortOrder = result.sortOrder;
       this.autoSort = result.autoSort;
       this.showTimeIndicators = result.showTimeIndicators;
       this.showDraftCount = result.showDraftCount;
       this.showSortIndicator = result.showSortIndicator;
+      this.showDateDivider = result.showDateDivider;
     } catch (error) {
       console.warn('[Threads DraftCraft] Could not load settings:', error);
     }
@@ -72,6 +75,9 @@ class ThreadsDraftCraft {
       } else if (message.action === 'toggleSortIndicator') {
         this.showSortIndicator = message.enabled;
         this.processDrafts(null, true); // Force reprocessing to show/hide sort indicator
+      } else if (message.action === 'toggleDateDivider') {
+        this.showDateDivider = message.enabled;
+        this.processDrafts(null, true); // Reprocess to show/hide date dividers
       } else if (message.action === 'getDraftStats') {
         sendResponse({
           totalDrafts: this.drafts.length,
@@ -836,7 +842,9 @@ class ThreadsDraftCraft {
     this.reorderDraftElements(dialogElement);
 
     // Add date dividers between different days
-    this.addDateDividers();
+    if (this.showDateDivider) {
+      this.addDateDividers();
+    }
 
     // Add scheduled time indicators
     this.addTimeIndicators();
