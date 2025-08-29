@@ -102,7 +102,9 @@ class ThreadsDraftCraft {
                 node.classList?.contains('threads-draftcraft-count') ||
                 node.classList?.contains('threads-draftcraft-time') ||
                 node.classList?.contains('threads-draftcraft-date-divider') ||
-                node.classList?.contains('threads-draftcraft-date-count'))
+                node.classList?.contains('threads-draftcraft-date-count') ||
+                node.classList?.contains('threads-draftcraft-date-suggestion') ||
+                node.classList?.contains('threads-draftcraft-date-suggestions'))
             );
 
           if (isExtensionMutation) {
@@ -917,6 +919,157 @@ class ThreadsDraftCraft {
     });
   }
 
+  // Helper: date utils and suggestions
+  getDateKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  startOfDay(date) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+    return d;
+  }
+
+  endOfDay(date) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+    return d;
+  }
+
+  collectScheduledByDate() {
+    const map = new Map();
+    this.drafts.forEach(d => {
+      const dt = d.scheduledTime instanceof Date ? d.scheduledTime : null;
+      if (!dt) return;
+      const key = this.getDateKey(dt);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(new Date(dt));
+    });
+    // sort
+    for (const [k, arr] of map.entries()) {
+      arr.sort((a,b)=>a-b);
+      map.set(k, arr);
+    }
+    return map;
+  }
+
+  // Generate at least 3 suggestions per date. Start with 3-hour cadence, then densify to 2h, 1h, and finally place in largest gaps. Ensure minutes are never 00.
+  generateSuggestionsForDate(baseDate, existingTimes) {
+    const suggestions = [];
+    const now = new Date();
+    const isToday = this.getDateKey(baseDate) === this.getDateKey(now);
+    const dayStart = this.startOfDay(baseDate);
+    const dayEnd = this.endOfDay(baseDate);
+
+    // Define active window 06:00 - 23:00 to have more room when crowded
+    const windowStartHour = 6;
+    const windowEndHour = 23;
+
+    // For today, exclude past times and start from at least 30 minutes in future
+    const minTime = isToday ? new Date(Math.max(now.getTime() + 30*60000, new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), windowStartHour).getTime())) : new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), windowStartHour);
+
+    const endWindow = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), windowEndHour, 0, 0, 0);
+
+    const taken = [...(existingTimes||[])].filter(d => d >= dayStart && d <= dayEnd);
+
+    // Helper to check conflict within a variable window
+    const conflicts = (candidate, thresholdMinutes = 90) => {
+      const thresholdMs = thresholdMinutes * 60 * 1000;
+      for (const t of taken) {
+        if (Math.abs(t - candidate) < thresholdMs) return true;
+      }
+      for (const s of suggestions) {
+        if (Math.abs(s - candidate) < thresholdMs) return true;
+      }
+      return false;
+    };
+
+    // Minute generator: never return 00, randomize 1..59
+    const randomNonZeroMinute = () => {
+      let m = Math.floor(Math.random()*59) + 1; // 1..59
+      if (m === 60) m = 59;
+      return m;
+    };
+
+    const withRandomMinutes = (dt) => {
+      const nd = new Date(dt);
+      nd.setMinutes(randomNonZeroMinute(), 0, 0);
+      return nd;
+    };
+
+    // 1) Try 3-hour cadence anchors spread across the day
+    for (let hour = windowStartHour; hour <= windowEndHour && suggestions.length < 3; hour += 3) {
+      const slot = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hour, 0, 0, 0);
+      if (slot < minTime || slot > endWindow) continue;
+      const cand = withRandomMinutes(slot);
+      if (!conflicts(cand, 90)) suggestions.push(cand);
+    }
+
+    // 2) If still short, try every 2 hours
+    for (let hour = windowStartHour; hour <= windowEndHour && suggestions.length < 3; hour += 2) {
+      const slot = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hour, 0, 0, 0);
+      if (slot < minTime || slot > endWindow) continue;
+      const cand = withRandomMinutes(slot);
+      if (!conflicts(cand, 75)) suggestions.push(cand);
+    }
+
+    // 3) If still short, try every hour
+    for (let hour = windowStartHour; hour <= windowEndHour && suggestions.length < 3; hour += 1) {
+      const slot = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hour, 0, 0, 0);
+      if (slot < minTime || slot > endWindow) continue;
+      const cand = withRandomMinutes(slot);
+      if (!conflicts(cand, 60)) suggestions.push(cand);
+    }
+
+    // 4) If still short, find largest gaps between existing (taken + suggestions) within window and drop a time in the middle
+    if (suggestions.length < 3) {
+      const pool = [...taken, ...suggestions].filter(t => t >= minTime && t <= endWindow).sort((a,b)=>a-b);
+      // Add window bounds to compute gaps
+      const bounds = [minTime, ...pool, endWindow];
+      const gaps = [];
+      for (let i = 0; i < bounds.length - 1; i++) {
+        const a = bounds[i];
+        const b = bounds[i+1];
+        const gapMs = b - a;
+        if (gapMs > 15*60*1000) { // consider gaps > 15 minutes
+          gaps.push({a, b, gapMs});
+        }
+      }
+      gaps.sort((x,y)=>y.gapMs - x.gapMs);
+      let gi = 0;
+      while (suggestions.length < 3 && gi < gaps.length) {
+        const {a, b} = gaps[gi++];
+        const mid = new Date(a.getTime() + (b - a)/2);
+        const cand = withRandomMinutes(mid);
+        if (!conflicts(cand, 45)) suggestions.push(cand);
+      }
+    }
+
+    // Final safety: if we still don't have 3, place at deterministic offsets from minTime
+    let offsetMin = 45;
+    while (suggestions.length < 3) {
+      const cand = new Date(minTime.getTime() + offsetMin*60000);
+      const c2 = withRandomMinutes(cand);
+      if (!conflicts(c2, 30)) suggestions.push(c2);
+      offsetMin += 37; // prime-ish step to avoid clustering
+    }
+
+    // Sort suggestions chronologically for display aesthetics
+    suggestions.sort((a,b)=>a-b);
+
+    return suggestions.slice(0,3);
+  }
+
+  formatTimeBadge(date) {
+    try {
+      return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    } catch (e) {
+      const h = date.getHours();
+      const m = String(date.getMinutes()).padStart(2,'0');
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const hr12 = h % 12 || 12;
+      return `${hr12}:${m} ${ampm}`;
+    }
+  }
+
   /**
    * Insert a date divider before the first draft of each calendar date
    */
@@ -962,10 +1115,8 @@ class ThreadsDraftCraft {
         try {
           formattedDate = dt.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         } catch (e) {
-          // Fallback formatting
           formattedDate = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
         }
-        // Determine Today/Tomorrow prefix
         const now = new Date();
         const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const tomorrow = new Date(now);
@@ -979,6 +1130,10 @@ class ThreadsDraftCraft {
         }
         label.textContent = prefix ? `${prefix}, ${formattedDate}` : formattedDate;
 
+        // Suggestions badges container
+        const suggestionsWrap = document.createElement('div');
+        suggestionsWrap.className = 'threads-draftcraft-date-suggestions';
+
         // Create count badge
         const count = dateCounts.get(key) || 0;
         const countEl = document.createElement('span');
@@ -987,10 +1142,25 @@ class ThreadsDraftCraft {
         countEl.setAttribute('aria-label', `${count} scheduled ${count === 1 ? 'post' : 'posts'} on ${label.textContent}`);
 
         header.appendChild(label);
+        header.appendChild(suggestionsWrap);
         header.appendChild(countEl);
 
         const line = document.createElement('div');
         line.className = 'threads-draftcraft-date-line';
+
+        // Generate suggestions and render badges
+        const scheduledMap = this.collectScheduledByDate();
+        const existingTimes = scheduledMap.get(key) || [];
+        const sugDates = this.generateSuggestionsForDate(dt, existingTimes);
+        if (sugDates.length > 0) {
+          sugDates.forEach(sdate => {
+            const b = document.createElement('span');
+            b.className = 'threads-draftcraft-date-suggestion';
+            b.textContent = this.formatTimeBadge(sdate);
+            b.setAttribute('data-threads-draftcraft-suggestion', sdate.toISOString());
+            suggestionsWrap.appendChild(b);
+          });
+        }
 
         divider.appendChild(header);
         divider.appendChild(line);

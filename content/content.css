@@ -424,3 +424,23 @@
   width: 100%;
   background: rgba(136, 153, 166, 0.45); /* subtle full-width line */
 }
+
+/* Date Suggestions (prediction) */
+.threads-draftcraft-date-suggestions {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: 10px;
+  flex: 0 1 auto;
+}
+
+.threads-draftcraft-date-suggestion {
+  font-size: 11px;
+  line-height: 1;
+  color: #1DA1F2;
+  background: rgba(29, 161, 242, 0.10);
+  border: 1px solid rgba(29, 161, 242, 0.25);
+  border-radius: 10px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
