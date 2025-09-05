@@ -104,7 +104,9 @@ class ThreadsDraftCraft {
                 node.classList?.contains('threads-draftcraft-date-divider') ||
                 node.classList?.contains('threads-draftcraft-date-count') ||
                 node.classList?.contains('threads-draftcraft-date-suggestion') ||
-                node.classList?.contains('threads-draftcraft-date-suggestions'))
+                node.classList?.contains('threads-draftcraft-date-suggestions') ||
+                node.classList?.contains('threads-draftcraft-status') ||
+                node.classList?.contains('threads-draftcraft-count-badge'))
             );
 
           if (isExtensionMutation) {
@@ -864,14 +866,17 @@ class ThreadsDraftCraft {
     const existing = dialogElement.querySelector('.threads-draftcraft-indicator');
     if (existing) existing.remove();
 
-    // Find the existing "Drafts" header
-    const draftsHeader = dialogElement.querySelector('h1 span');
-    if (!draftsHeader || !draftsHeader.textContent.includes('Drafts')) {
+    // Find the existing "Drafts" header element (h1)
+    const headerEl = dialogElement.querySelector('h1');
+    if (!headerEl || !headerEl.textContent.includes('Drafts')) {
       return;
     }
 
-    // Remove any existing integrated indicators
-    const existingStatus = draftsHeader.querySelector('.threads-draftcraft-status');
+    // Determine a safe container (prefer the parent of h1)
+    const headerContainer = headerEl.parentElement || headerEl;
+
+    // Remove any existing integrated indicators from the container
+    const existingStatus = headerContainer.querySelector('.threads-draftcraft-status');
     if (existingStatus) existingStatus.remove();
 
     // Skip adding sort indicator if disabled
@@ -879,7 +884,7 @@ class ThreadsDraftCraft {
       return;
     }
 
-    // Create compact status indicator to integrate into header
+    // Create compact status indicator to integrate into header (as a sibling within the h1, not inside the title span)
     const statusIndicator = document.createElement('span');
     statusIndicator.className = 'threads-draftcraft-status';
     statusIndicator.innerHTML = `
@@ -899,8 +904,8 @@ class ThreadsDraftCraft {
       </span>
     `;
 
-    // Integrate the status into the existing header
-    draftsHeader.appendChild(statusIndicator);
+    // Integrate the status into the header container (sibling to h1)
+    headerContainer.appendChild(statusIndicator);
   }
 
   /**
@@ -1277,10 +1282,12 @@ class ThreadsDraftCraft {
     const existing = dialogElement.querySelector('.threads-draftcraft-count');
     if (existing) existing.remove();
 
-    // Always remove existing integrated count badges
-    const draftsHeader = dialogElement.querySelector('h1 span');
-    if (draftsHeader) {
-      const existingCount = draftsHeader.querySelector('.threads-draftcraft-count-badge');
+    // Find the header element (h1)
+    const headerEl = dialogElement.querySelector('h1');
+    // Determine a safe container (prefer the parent of h1)
+    const headerContainer = headerEl ? (headerEl.parentElement || headerEl) : null;
+    if (headerContainer) {
+      const existingCount = headerContainer.querySelector('.threads-draftcraft-count-badge');
       if (existingCount) existingCount.remove();
     }
 
@@ -1290,13 +1297,13 @@ class ThreadsDraftCraft {
 
     if (this.drafts.length === 0) return;
 
-    // Verify we have the drafts header (already found above)
-    if (!draftsHeader || !draftsHeader.textContent.includes('Drafts')) {
+    // Verify we have the Drafts header
+    if (!headerEl || !headerEl.textContent.includes('Drafts')) {
       // console.warn('[Threads DraftCraft] Could not find Drafts header for count integration');
       return;
     }
 
-    // Create compact count badge to integrate into header
+    // Create compact count badge to integrate into header (append to h1, not to inner span)
     const countBadge = document.createElement('span');
     countBadge.className = 'threads-draftcraft-count-badge';
     countBadge.innerHTML = `
@@ -1316,8 +1323,8 @@ class ThreadsDraftCraft {
       </span>
     `;
 
-    // Integrate the count into the existing header
-    draftsHeader.appendChild(countBadge);
+    // Integrate the count into the header container (sibling to h1)
+    headerContainer.appendChild(countBadge);
   }
 
   /**
