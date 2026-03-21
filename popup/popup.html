@@ -18,15 +18,15 @@
 
 
     <!-- Draft Statistics -->
-    <div class="stats-section">
-        <h2>📊 Draft Statistics</h2>
+    <div class="stats-section" role="region" aria-label="Draft Statistics">
+        <h2>Draft Statistics</h2>
         <div class="stats-grid">
             <div class="stat-item">
-                <div class="stat-number" id="totalDrafts">-</div>
+                <div class="stat-number" id="totalDrafts" role="status" aria-label="Total drafts count">-</div>
                 <div class="stat-label">Total Drafts</div>
             </div>
             <div class="stat-item">
-                <div class="stat-number" id="scheduledDrafts">-</div>
+                <div class="stat-number" id="scheduledDrafts" role="status" aria-label="Scheduled drafts count">-</div>
                 <div class="stat-label">Scheduled</div>
             </div>
         </div>
@@ -44,15 +44,15 @@
     </div>
 
     <!-- Settings -->
-    <div class="settings-section">
-        <h2>⚙️ Settings</h2>
+    <div class="settings-section" role="region" aria-label="Settings">
+        <h2>Settings</h2>
         
         <div class="setting-item">
             <div class="setting-info">
                 <div class="setting-label">Sort Order</div>
                 <div class="setting-description">How to sort scheduled drafts</div>
             </div>
-            <select id="sortOrder" class="setting-select">
+            <select id="sortOrder" class="setting-select" aria-label="Sort order">
                 <option value="earliest">Earliest First</option>
                 <option value="latest">Latest First</option>
             </select>
@@ -64,8 +64,8 @@
                 <div class="setting-label">Show Time Indicators</div>
                 <div class="setting-description">Display scheduled time on each draft</div>
             </div>
-            <label class="toggle-switch">
-                <input type="checkbox" id="showTimeIndicators" checked>
+            <label class="toggle-switch" for="showTimeIndicators">
+                <input type="checkbox" id="showTimeIndicators" checked aria-label="Show time indicators">
                 <span class="toggle-slider"></span>
             </label>
         </div>
@@ -75,8 +75,8 @@
                 <div class="setting-label">Show Date Line</div>
                 <div class="setting-description">Display a date label with per-day counter and a full-width line between days</div>
             </div>
-            <label class="toggle-switch">
-                <input type="checkbox" id="showDateDivider" checked>
+            <label class="toggle-switch" for="showDateDivider">
+                <input type="checkbox" id="showDateDivider" checked aria-label="Show date line">
                 <span class="toggle-slider"></span>
             </label>
         </div>
@@ -86,8 +86,8 @@
                 <div class="setting-label">Show Draft Count</div>
                 <div class="setting-description">Display total number of drafts</div>
             </div>
-            <label class="toggle-switch">
-                <input type="checkbox" id="showDraftCount" checked>
+            <label class="toggle-switch" for="showDraftCount">
+                <input type="checkbox" id="showDraftCount" checked aria-label="Show draft count">
                 <span class="toggle-slider"></span>
             </label>
         </div>
@@ -97,8 +97,8 @@
                 <div class="setting-label">Show Sort Indicator</div>
                 <div class="setting-description">Display sort order indicator in drafts header</div>
             </div>
-            <label class="toggle-switch">
-                <input type="checkbox" id="showSortIndicator" checked>
+            <label class="toggle-switch" for="showSortIndicator">
+                <input type="checkbox" id="showSortIndicator" checked aria-label="Show sort indicator">
                 <span class="toggle-slider"></span>
             </label>
         </div>
@@ -140,17 +140,17 @@
     </div>
 
     <!-- Error Message -->
-    <div class="error-message" id="errorMessage" style="display: none;">
-        <div class="error-icon">⚠️</div>
+    <div class="error-message" id="errorMessage" style="display: none;" role="alert">
+        <div class="error-icon" aria-hidden="true">!</div>
         <div class="error-text" id="errorText"></div>
-        <button class="error-close" id="errorClose">×</button>
+        <button class="error-close" id="errorClose" aria-label="Close error message">x</button>
     </div>
 
     <!-- Success Message -->
-    <div class="success-message" id="successMessage" style="display: none;">
-        <div class="success-icon">✅</div>
+    <div class="success-message" id="successMessage" style="display: none;" role="status">
+        <div class="success-icon" aria-hidden="true">OK</div>
         <div class="success-text" id="successText"></div>
-        <button class="success-close" id="successClose">×</button>
+        <button class="success-close" id="successClose" aria-label="Close success message">x</button>
     </div>
 
     <script src="popup.js"></script>

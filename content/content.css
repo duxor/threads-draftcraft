@@ -444,3 +444,74 @@
   padding: 1px 6px;
   white-space: nowrap;
 }
+
+/* Status indicator (sort order label in header) */
+.threads-draftcraft-status-label {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.threads-draftcraft-status-icon {
+  display: inline-block;
+  margin-right: 2px;
+}
+
+/* Time info badge (integrated with "Posting" text) */
+.threads-draftcraft-time-info {
+  margin-left: 6px;
+  color: #1DA1F2;
+  font-weight: 500;
+  background: rgba(29, 161, 242, 0.1);
+  padding: 0 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Subtle time indicator fallback */
+.threads-draftcraft-time-subtle-inner {
+  color: #1DA1F2;
+  font-size: 10px;
+  font-weight: 500;
+  margin: 2px 0;
+  opacity: 0.8;
+}
+
+.threads-draftcraft-time-subtle-inner::before {
+  content: '\01F4C5 '; /* calendar emoji */
+}
+
+/* Count badge (integrated into header) */
+.threads-draftcraft-count-badge-inner {
+  margin-left: 8px;
+  background: rgba(76, 175, 80, 0.15);
+  color: #4CAF50;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Dark mode overrides for new classes */
+@media (prefers-color-scheme: dark) {
+  .threads-draftcraft-time-info {
+    color: #4DA6FF;
+    background: rgba(29, 161, 242, 0.15);
+  }
+
+  .threads-draftcraft-time-subtle-inner {
+    color: #4DA6FF;
+  }
+
+  .threads-draftcraft-count-badge-inner {
+    background: rgba(76, 175, 80, 0.2);
+    color: #66BB6A;
+  }
+}

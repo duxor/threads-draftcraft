@@ -3,6 +3,77 @@
  * Enhances the drafts section on threads.com with sorting and organization features
  */
 
+/** Named constants */
+const DRAFTCRAFT_DEBUG = false;
+const MIN_DRAFT_TEXT_LENGTH = 5;
+const MIN_DRAFT_CONTENT_LENGTH = 20;
+const MAX_DRAFT_CONTENT_LENGTH = 500;
+const MIN_SUBSTANTIAL_TEXT_LENGTH = 10;
+const MIN_TEXT_NODE_LENGTH = 3;
+const DEBOUNCE_DELAY_MS = 150;
+const SUGGESTION_WINDOW_START_HOUR = 6;
+const SUGGESTION_WINDOW_END_HOUR = 23;
+const SUGGESTION_MIN_FUTURE_MINUTES = 30;
+const SUGGESTION_COUNT = 3;
+const NEXT_DRAFT_PREVIEW_LENGTH = 50;
+const FALLBACK_MOCK_HOURS = [2, 4, 8, 16, 25, 30, 48];
+const BUSINESS_HOURS_START = 9;
+const BUSINESS_HOURS_END = 20;
+
+/** Day/month name constants */
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const DAY_NAMES_SHORT = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const MONTH_NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/** Shared regex patterns for schedule detection */
+const DAY_PATTERN = DAY_NAMES.join('|');
+const DAY_PATTERN_SHORT = DAY_NAMES_SHORT.join('|');
+const MONTH_PATTERN = MONTH_NAMES.join('|');
+
+const SCHEDULE_TIME_PATTERNS = [
+  // Match "Posting on Mon, Sep 1 at 4:17 PM GMT+2" format
+  new RegExp(`posting\\s+on\\s+(${DAY_PATTERN_SHORT}|${DAY_PATTERN}),?\\s+(${MONTH_PATTERN})\\s+(\\d{1,2})\\s+at\\s+(\\d{1,2}):(\\d{2})\\s*(am|pm|AM|PM)(?:\\s+([A-Z]{3}[+-]?\\d{1,2}))?`, 'i'),
+  // Match "today/tomorrow/dayname at HH:MM AM/PM" with optional timezone
+  new RegExp(`(?:posting\\s+)?(?:today|tomorrow|${DAY_PATTERN})\\s+at\\s+(\\d{1,2}):(\\d{2})\\s*(am|pm|AM|PM)(?:\\s+[A-Z]{3}[+-]?\\d{1,2})?`, 'i'),
+  // Fallback for just the time with optional timezone
+  /(\d{1,2}):(\d{2})\s*(am|pm|AM|PM)(?:\s+[A-Z]{3}[+-]?\d{1,2})?/i
+];
+
+const SCHEDULE_DETECTION_PATTERNS = [
+  // Match "today/tomorrow/dayname at HH:MM AM/PM" with optional timezone
+  new RegExp(`(?:posting\\s+)?(?:today|tomorrow|${DAY_PATTERN})\\s+at\\s+\\d{1,2}:\\d{2}\\s*(?:am|pm|AM|PM)(?:\\s+[A-Z]{3}[+-]?\\d{1,2})?`, 'i'),
+  // Match "Posting on Mon, Sep 1 at 4:17 PM GMT+2" format
+  new RegExp(`posting\\s+on\\s+(?:${DAY_PATTERN_SHORT}|${DAY_PATTERN}),?\\s+(?:${MONTH_PATTERN})\\s+\\d{1,2}\\s+at\\s+\\d{1,2}:\\d{2}\\s*(?:am|pm|AM|PM)(?:\\s+[A-Z]{3}[+-]?\\d{1,2})?`, 'i'),
+  // Fallback for just the time with optional timezone
+  /\d{1,2}:\d{2}\s*(?:am|pm|AM|PM)(?:\s+[A-Z]{3}[+-]?\d{1,2})?/i
+];
+
+const SCHEDULING_INDICATORS = [
+  'posting today',
+  'today at',
+  'posting tomorrow',
+  'tomorrow at',
+  'posting in',
+  /in \d+ hours?/,
+  /in \d+ days?/,
+  /\btoday\b/,
+  /\btomorrow\b/
+];
+
+/** Safe text escaping helper */
+function escapeText(str) {
+  const div = document.createElement('span');
+  div.textContent = str;
+  return div.textContent;
+}
+
+/** Conditional logger */
+function debugLog(...args) {
+  if (DRAFTCRAFT_DEBUG) {
+    console.log('[Threads DraftCraft]', ...args);
+  }
+}
+
 class ThreadsDraftCraft {
   constructor() {
     this.drafts = [];
@@ -12,6 +83,8 @@ class ThreadsDraftCraft {
     this.showDraftCount = true;
     this.showSortIndicator = true;
     this.showDateDivider = true;
+    this.observer = null;
+    this._debounceTimer = null;
 
     // Initialize the extension
     this.init();
@@ -51,7 +124,7 @@ class ThreadsDraftCraft {
       this.showSortIndicator = result.showSortIndicator;
       this.showDateDivider = result.showDateDivider;
     } catch (error) {
-      console.warn('[Threads DraftCraft] Could not load settings:', error);
+      debugLog('Could not load settings:', error);
     }
   }
 
@@ -81,6 +154,7 @@ class ThreadsDraftCraft {
       } else if (message.action === 'getDraftStats') {
         sendResponse({
           totalDrafts: this.drafts.length,
+          scheduledDrafts: this.drafts.filter(d => d.scheduledTime).length,
           nextScheduled: this.getNextScheduledDraft()
         });
       }
@@ -91,46 +165,41 @@ class ThreadsDraftCraft {
    * Observe for the appearance of drafts dialog
    */
   observeForDraftsDialog() {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList') {
-          // Skip mutations caused by our own extension elements
-          const isExtensionMutation = mutation.addedNodes &&
-            Array.from(mutation.addedNodes).some(node =>
-              node.nodeType === Node.ELEMENT_NODE &&
-              (node.classList?.contains('threads-draftcraft-indicator') ||
-                node.classList?.contains('threads-draftcraft-count') ||
-                node.classList?.contains('threads-draftcraft-time') ||
-                node.classList?.contains('threads-draftcraft-date-divider') ||
-                node.classList?.contains('threads-draftcraft-date-count') ||
-                node.classList?.contains('threads-draftcraft-date-suggestion') ||
-                node.classList?.contains('threads-draftcraft-date-suggestions') ||
-                node.classList?.contains('threads-draftcraft-status') ||
-                node.classList?.contains('threads-draftcraft-count-badge'))
-            );
+    // Disconnect existing observer if any
+    if (this.observer) {
+      this.observer.disconnect();
+    }
 
-          if (isExtensionMutation) {
-            return; // Skip processing this mutation
-          }
+    this.observer = new MutationObserver((mutations) => {
+      let hasRelevantMutation = false;
 
-          // Look for drafts dialog or modal
-          const dialogElements = document.querySelectorAll('[role="dialog"], .x1n2onr6');
+      for (const mutation of mutations) {
+        if (mutation.type !== 'childList') continue;
 
-          dialogElements.forEach((dialog) => {
-            // Check if dialog is already processed to prevent infinite loop
-            if (dialog.hasAttribute('data-threads-draftcraft-processed')) {
-              return;
-            }
+        // Skip mutations caused by our own extension elements
+        const isExtensionMutation = mutation.addedNodes &&
+          Array.from(mutation.addedNodes).some(node =>
+            node.nodeType === Node.ELEMENT_NODE &&
+            node.className && typeof node.className === 'string' &&
+            node.className.includes('threads-draftcraft')
+          );
 
-            if (this.isDraftsDialog(dialog)) {
-              this.processDrafts(dialog);
-            }
-          });
+        if (!isExtensionMutation) {
+          hasRelevantMutation = true;
+          break;
         }
-      });
+      }
+
+      if (!hasRelevantMutation) return;
+
+      // Debounce processing to avoid excessive DOM queries
+      clearTimeout(this._debounceTimer);
+      this._debounceTimer = setTimeout(() => {
+        this._processDialogMutations();
+      }, DEBOUNCE_DELAY_MS);
     });
 
-    observer.observe(document.body, {
+    this.observer.observe(document.body, {
       childList: true,
       subtree: true
     });
@@ -140,10 +209,38 @@ class ThreadsDraftCraft {
   }
 
   /**
+   * Process dialog mutations (debounced)
+   */
+  _processDialogMutations() {
+    const dialogElements = document.querySelectorAll('[role="dialog"]');
+
+    dialogElements.forEach((dialog) => {
+      if (dialog.hasAttribute('data-threads-draftcraft-processed')) {
+        return;
+      }
+
+      if (this.isDraftsDialog(dialog)) {
+        this.processDrafts(dialog);
+      }
+    });
+  }
+
+  /**
+   * Disconnect the observer (cleanup)
+   */
+  disconnect() {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+    clearTimeout(this._debounceTimer);
+  }
+
+  /**
    * Check if the current page already has a drafts dialog open
    */
   checkForExistingDraftsDialog() {
-    const dialogElements = document.querySelectorAll('[role="dialog"], .x1n2onr6');
+    const dialogElements = document.querySelectorAll('[role="dialog"]');
 
     dialogElements.forEach((dialog) => {
       // Check if dialog is already processed to prevent infinite loop
@@ -301,7 +398,7 @@ class ThreadsDraftCraft {
    * Find the drafts dialog in the DOM
    */
   findDraftsDialog() {
-    const dialogs = document.querySelectorAll('[role="dialog"], .x1n2onr6');
+    const dialogs = document.querySelectorAll('[role="dialog"]');
 
     for (let dialog of dialogs) {
       if (this.isDraftsDialog(dialog)) {
@@ -365,7 +462,7 @@ class ThreadsDraftCraft {
         const text = div.textContent.trim();
 
         // Enhanced detection: look for any scheduleable content
-        if (text.length > 20 && text.length < 500 && this.hasScheduleableContent(div)) {
+        if (text.length > MIN_DRAFT_CONTENT_LENGTH && text.length < MAX_DRAFT_CONTENT_LENGTH && this.hasScheduleableContent(div)) {
           // Make sure this isn't a child of an already found element
           let isChild = false;
           for (let found of foundDrafts) {
@@ -403,45 +500,45 @@ class ThreadsDraftCraft {
 
   /**
    * Check if an element contains content that can be scheduled
-   * Uses the same comprehensive logic as extractScheduledTime
+   * Uses shared patterns from module-level constants
    */
   hasScheduleableContent(element) {
     const text = element.textContent.toLowerCase().trim();
 
-    if (!text || text.length < 5) {
+    if (!text || text.length < MIN_DRAFT_TEXT_LENGTH) {
       return false;
     }
 
-    // Define day names for matching
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dayPattern = dayNames.join('|');
-
-    // Define month names and short day names for date matching
-    const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-    const monthPattern = monthNames.join('|');
-    const dayNamesShort = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    const dayPatternShort = dayNamesShort.join('|');
-
-    // Check for explicit time patterns (same as extractScheduledTime)
-    const timePatterns = [
-      // Match "today/tomorrow/dayname at HH:MM AM/PM" with optional timezone
-      new RegExp(`(?:posting\\s+)?(?:today|tomorrow|${dayPattern})\\s+at\\s+\\d{1,2}:\\d{2}\\s*(?:am|pm|AM|PM)(?:\\s+[A-Z]{3}[+-]?\\d{1,2})?`, 'i'),
-      // Match "Posting on Mon, Sep 1 at 4:17 PM GMT+2" format
-      new RegExp(`posting\\s+on\\s+(?:${dayPatternShort}|${dayPattern}),?\\s+(?:${monthPattern})\\s+\\d{1,2}\\s+at\\s+\\d{1,2}:\\d{2}\\s*(?:am|pm|AM|PM)(?:\\s+[A-Z]{3}[+-]?\\d{1,2})?`, 'i'),
-      // Fallback for just the time with optional timezone
-      /\d{1,2}:\d{2}\s*(?:am|pm|AM|PM)(?:\s+[A-Z]{3}[+-]?\d{1,2})?/i
-    ];
-
-    // Check for explicit time patterns
-    for (const pattern of timePatterns) {
+    // Check for explicit time patterns (shared with extractScheduledTime)
+    for (const pattern of SCHEDULE_DETECTION_PATTERNS) {
       if (pattern.test(text)) {
         return true;
       }
     }
 
-    // Check for day name patterns (enhanced from extractScheduledTime)
-    for (const dayName of dayNames) {
-      const dayPatterns = [
+    // Check for day name patterns
+    if (this._matchesDayNamePattern(text)) {
+      return true;
+    }
+
+    // Check for other scheduling indicators
+    for (const indicator of SCHEDULING_INDICATORS) {
+      if (typeof indicator === 'string') {
+        if (text.includes(indicator)) return true;
+      } else if (indicator.test(text)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if text matches any day-name-based scheduling pattern
+   */
+  _matchesDayNamePattern(text) {
+    for (const dayName of DAY_NAMES) {
+      const patterns = [
         `posting ${dayName}`,
         `${dayName} at`,
         `${dayName} review`,
@@ -452,51 +549,17 @@ class ThreadsDraftCraft {
         `${dayName} post`,
         `${dayName} is`,
         `${dayName} will`,
-        `${dayName}!`,
-        // Also check for day names at the beginning of sentences or after punctuation
-        new RegExp(`(^|\\.|!|\\?)\\s*${dayName}\\b`, 'i')
+        `${dayName}!`
       ];
 
-      for (const pattern of dayPatterns) {
-        if (typeof pattern === 'string') {
-          if (text.includes(pattern)) {
-            return true;
-          }
-        } else {
-          // Handle regex patterns
-          if (pattern.test(text)) {
-            return true;
-          }
-        }
+      for (const pattern of patterns) {
+        if (text.includes(pattern)) return true;
       }
+
+      // Also check for day names at sentence boundaries
+      const sentencePattern = new RegExp(`(^|\\.|!|\\?)\\s*${dayName}\\b`, 'i');
+      if (sentencePattern.test(text)) return true;
     }
-
-    // Check for other scheduling indicators
-    const schedulingIndicators = [
-      'posting today',
-      'today at',
-      'posting tomorrow',
-      'tomorrow at',
-      'posting in',
-      /in \d+ hours?/,
-      /in \d+ days?/,
-      /\btoday\b/,
-      /\btomorrow\b/
-    ];
-
-    for (const indicator of schedulingIndicators) {
-      if (typeof indicator === 'string') {
-        if (text.includes(indicator)) {
-          return true;
-        }
-      } else {
-        // Handle regex patterns
-        if (indicator.test(text)) {
-          return true;
-        }
-      }
-    }
-
     return false;
   }
 
@@ -536,7 +599,7 @@ class ThreadsDraftCraft {
       {
         acceptNode: function(node) {
           // Skip very short text nodes and whitespace
-          if (node.textContent.trim().length < 3) {
+          if (node.textContent.trim().length < MIN_TEXT_NODE_LENGTH) {
             return NodeFilter.FILTER_SKIP;
           }
           return NodeFilter.FILTER_ACCEPT;
@@ -550,51 +613,50 @@ class ThreadsDraftCraft {
     }
 
     // Return the first substantial text content
-    return textNodes.find(text => text.length > 10) || textNodes[0] || 'Draft content';
+    return textNodes.find(text => text.length > MIN_SUBSTANTIAL_TEXT_LENGTH) || textNodes[0] || 'Draft content';
   }
 
   /**
    * Extract scheduled time from draft element
    */
+  /**
+   * Convert 12-hour time to 24-hour format
+   */
+  _to24Hour(hours, isPM) {
+    let hour24 = hours;
+    if (isPM && hours !== 12) {
+      hour24 += 12;
+    } else if (!isPM && hours === 12) {
+      hour24 = 0;
+    }
+    return hour24;
+  }
+
+  /**
+   * Calculate days until a target day of week (0=Sun, 6=Sat)
+   * If target is same as current day, returns 7 (next week)
+   */
+  _daysUntilDay(targetDayIndex, currentDayIndex) {
+    let daysUntil = targetDayIndex - currentDayIndex;
+    if (daysUntil <= 0) {
+      daysUntil += 7; // Next week if day has passed or is today
+    }
+    return daysUntil;
+  }
+
   extractScheduledTime(element) {
-    const originalText = element.textContent;
-    const textContent = originalText.toLowerCase();
-
-    // Try to extract actual time strings from Threads.com draft content
-    // Look for patterns like "today at 2:14 pm", "tomorrow at 12:36 PM", "Sunday at 3:00 PM", etc.
-
-    // Define day names for matching
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dayPattern = dayNames.join('|');
-
-    // Define month names and short day names for date matching
-    const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-    const monthPattern = monthNames.join('|');
-    const dayNamesShort = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    const dayPatternShort = dayNamesShort.join('|');
-
-    // Enhanced patterns to match times with day names and optional timezone info
-    const timePatterns = [
-      // Match "Posting on Mon, Sep 1 at 4:17 PM GMT+2" format
-      new RegExp(`posting\\s+on\\s+(${dayPatternShort}|${dayPattern}),?\\s+(${monthPattern})\\s+(\\d{1,2})\\s+at\\s+(\\d{1,2}):(\\d{2})\\s*(am|pm|AM|PM)(?:\\s+([A-Z]{3}[+-]?\\d{1,2}))?`, 'i'),
-      // Match "today/tomorrow/dayname at HH:MM AM/PM" with optional timezone (case-insensitive)
-      new RegExp(`(?:posting\\s+)?(?:today|tomorrow|${dayPattern})\\s+at\\s+(\\d{1,2}):(\\d{2})\\s*(am|pm|AM|PM)(?:\\s+[A-Z]{3}[+-]?\\d{1,2})?`, 'i'),
-      // Fallback for just the time with optional timezone (case-insensitive)
-      /(\d{1,2}):(\d{2})\s*(am|pm|AM|PM)(?:\s+[A-Z]{3}[+-]?\d{1,2})?/i
-    ];
+    const textContent = element.textContent.toLowerCase();
 
     let timeMatch = null;
     let dayMatch = null;
     let patternIndex = -1;
 
-    for (let i = 0; i < timePatterns.length; i++) {
-      const pattern = timePatterns[i];
-      timeMatch = textContent.match(pattern);
+    for (let i = 0; i < SCHEDULE_TIME_PATTERNS.length; i++) {
+      timeMatch = textContent.match(SCHEDULE_TIME_PATTERNS[i]);
       if (timeMatch) {
         patternIndex = i;
-        // Also capture which day was mentioned (for non-specific date patterns)
         if (i > 0) {
-          const dayRegex = new RegExp(`(today|tomorrow|${dayPattern})`, 'i');
+          const dayRegex = new RegExp(`(today|tomorrow|${DAY_PATTERN})`, 'i');
           dayMatch = textContent.match(dayRegex);
         }
         break;
@@ -604,57 +666,35 @@ class ThreadsDraftCraft {
     if (timeMatch) {
       // Handle "Posting on Mon, Sep 1 at 4:17 PM GMT+2" format (first pattern)
       if (patternIndex === 0) {
-        const dayName = timeMatch[1];
         const monthName = timeMatch[2].toLowerCase();
         const dateNum = parseInt(timeMatch[3]);
         const hours = parseInt(timeMatch[4]);
         const minutes = parseInt(timeMatch[5]);
         const isPM = timeMatch[6].toLowerCase() === 'pm';
-        const timezone = timeMatch[7];
 
-        // Convert month name to number
-        const monthIndex = monthNames.indexOf(monthName);
-        if (monthIndex === -1) return null; // Invalid month
+        const monthIndex = MONTH_NAMES.indexOf(monthName);
+        if (monthIndex === -1) return null;
 
-        // Convert to 24-hour format
-        let hour24 = hours;
-        if (isPM && hours !== 12) {
-          hour24 += 12;
-        } else if (!isPM && hours === 12) {
-          hour24 = 0;
-        }
-
-        // Create date object with specific date
+        const hour24 = this._to24Hour(hours, isPM);
         const currentYear = new Date().getFullYear();
         const scheduledDate = new Date(currentYear, monthIndex, dateNum, hour24, minutes, 0, 0);
 
-        // If the date is in the past, assume it's for next year
-        const now = new Date();
-        if (scheduledDate < now) {
+        if (scheduledDate < new Date()) {
           scheduledDate.setFullYear(currentYear + 1);
         }
 
         return scheduledDate;
       }
 
-      // Handle existing patterns (today/tomorrow/dayname format)
+      // Handle today/tomorrow/dayname format
       const hours = parseInt(timeMatch[1]);
       const minutes = parseInt(timeMatch[2]);
       const isPM = timeMatch[3].toLowerCase() === 'pm';
+      const hour24 = this._to24Hour(hours, isPM);
 
-      // Convert to 24-hour format
-      let hour24 = hours;
-      if (isPM && hours !== 12) {
-        hour24 += 12;
-      } else if (!isPM && hours === 12) {
-        hour24 = 0;
-      }
-
-      // Create date object
       const now = new Date();
       const scheduledDate = new Date(now);
 
-      // Determine the target date based on day mentioned
       if (dayMatch) {
         const dayIndicator = dayMatch[1].toLowerCase();
 
@@ -662,131 +702,68 @@ class ThreadsDraftCraft {
           // Keep current date
         } else if (dayIndicator === 'tomorrow') {
           scheduledDate.setDate(now.getDate() + 1);
-        } else if (dayNames.includes(dayIndicator)) {
-          // Handle specific day names
-          const targetDayIndex = dayNames.indexOf(dayIndicator);
-          const currentDayIndex = now.getDay();
-
-          // Calculate days until target day
-          let daysUntil = targetDayIndex - currentDayIndex;
-          if (daysUntil < 0) {
-            daysUntil += 7; // Next week if day has passed
-          }
-
+        } else if (DAY_NAMES.includes(dayIndicator)) {
+          const targetDayIndex = DAY_NAMES.indexOf(dayIndicator);
+          const daysUntil = this._daysUntilDay(targetDayIndex, now.getDay());
           scheduledDate.setDate(now.getDate() + daysUntil);
         }
       }
 
       scheduledDate.setHours(hour24, minutes, 0, 0);
 
-      // If the time has already passed today and no specific day was mentioned, schedule for tomorrow
       if (!dayMatch && scheduledDate <= now) {
         scheduledDate.setDate(now.getDate() + 1);
       }
       return scheduledDate;
     }
 
-    // Fallback patterns for relative time indicators
+    // Fallback: day name without specific time - use deterministic time based on position
+    if (this._matchesDayNamePattern(textContent)) {
+      for (const dayName of DAY_NAMES) {
+        if (textContent.includes(dayName)) {
+          const now = new Date();
+          const scheduledDate = new Date(now);
+          const targetDayIndex = DAY_NAMES.indexOf(dayName);
+          const daysUntil = this._daysUntilDay(targetDayIndex, now.getDay());
+          scheduledDate.setDate(now.getDate() + daysUntil);
 
-    // Check for specific day names without specific time (Sunday, Monday, etc.)
-    for (const dayName of dayNames) {
-      // More comprehensive pattern matching for day names
-      const dayPatterns = [
-        `posting ${dayName}`,
-        `${dayName} at`,
-        `${dayName} review`,
-        `${dayName} meeting`,
-        `${dayName} motivation`,
-        `${dayName} planning`,
-        `${dayName} session`,
-        `${dayName} post`,
-        `${dayName} is`,
-        `${dayName} will`,
-        `${dayName}!`,
-        // Also check for day names at the beginning of sentences or after punctuation
-        new RegExp(`(^|\\.|!|\\?)\\s*${dayName}\\b`, 'i')
-      ];
-
-      let dayFound = false;
-      for (const pattern of dayPatterns) {
-        if (typeof pattern === 'string') {
-          if (textContent.includes(pattern)) {
-            dayFound = true;
-            break;
-          }
-        } else {
-          // Handle regex patterns
-          if (pattern.test(textContent)) {
-            dayFound = true;
-            break;
-          }
+          // Deterministic time based on element position (not random)
+          const index = Array.from(element.parentElement?.children || []).indexOf(element);
+          const deterministicHour = BUSINESS_HOURS_START + ((index * 3) % (BUSINESS_HOURS_END - BUSINESS_HOURS_START));
+          scheduledDate.setHours(deterministicHour, 0, 0, 0);
+          return scheduledDate;
         }
-      }
-
-      if (dayFound) {
-        const now = new Date();
-        const scheduledDate = new Date(now);
-
-        const targetDayIndex = dayNames.indexOf(dayName);
-        const currentDayIndex = now.getDay();
-
-        // Calculate days until target day
-        let daysUntil = targetDayIndex - currentDayIndex;
-        if (daysUntil < 0) {
-          daysUntil += 7; // Next week if day has passed
-        }
-
-        scheduledDate.setDate(now.getDate() + daysUntil);
-        // Set a random time during business hours for the day
-        const randomHour = Math.floor(Math.random() * 12) + 9; // 9 AM to 8 PM
-        const randomMinute = Math.floor(Math.random() * 60);
-        scheduledDate.setHours(randomHour, randomMinute, 0, 0);
-        return scheduledDate;
       }
     }
 
-    // Check for "today" indicators without specific time
+    // Check for "today" indicators without specific time - deterministic
     if (textContent.includes('posting today') || textContent.includes('today at')) {
-      // Generate times for today (next few hours)
-      const hoursFromNow = Math.floor(Math.random() * 8) + 1; // 1-8 hours from now
-      return new Date(Date.now() + hoursFromNow * 60 * 60 * 1000);
+      const index = Array.from(element.parentElement?.children || []).indexOf(element);
+      return new Date(Date.now() + (1 + index * 2) * 60 * 60 * 1000);
     }
 
-    // Check for "tomorrow" indicators without specific time
+    // Check for "tomorrow" indicators without specific time - deterministic
     if (textContent.includes('posting tomorrow') || textContent.includes('tomorrow at')) {
-      // Generate times for tomorrow (24+ hours from now)
-      const hoursFromNow = Math.floor(Math.random() * 12) + 24; // 24-35 hours from now
-      return new Date(Date.now() + hoursFromNow * 60 * 60 * 1000);
+      const index = Array.from(element.parentElement?.children || []).indexOf(element);
+      return new Date(Date.now() + (24 + index * 2) * 60 * 60 * 1000);
     }
 
     // Check for "in X hours" or "in X days" patterns
     const inHoursMatch = textContent.match(/in (\d+) hours?/);
     if (inHoursMatch) {
-      const hours = parseInt(inHoursMatch[1]);
-      return new Date(Date.now() + hours * 60 * 60 * 1000);
+      return new Date(Date.now() + parseInt(inHoursMatch[1]) * 60 * 60 * 1000);
     }
 
     const inDaysMatch = textContent.match(/in (\d+) days?/);
     if (inDaysMatch) {
-      const days = parseInt(inDaysMatch[1]);
-      return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+      return new Date(Date.now() + parseInt(inDaysMatch[1]) * 24 * 60 * 60 * 1000);
     }
 
-    // Final fallback: assign times based on position to maintain some order
+    // Final fallback: deterministic times based on position
     const index = parseInt(element.getAttribute('data-draft-index')) ||
       Array.from(element.parentElement?.children || []).indexOf(element) || 0;
 
-    // Create chronologically ordered times as fallback
-    const mockTimes = [
-      new Date(Date.now() + 2 * 60 * 60 * 1000),  // 2 hours from now
-      new Date(Date.now() + 4 * 60 * 60 * 1000),  // 4 hours from now
-      new Date(Date.now() + 8 * 60 * 60 * 1000),  // 8 hours from now
-      new Date(Date.now() + 16 * 60 * 60 * 1000), // 16 hours from now
-      new Date(Date.now() + 25 * 60 * 60 * 1000), // 25 hours from now (tomorrow)
-      new Date(Date.now() + 30 * 60 * 60 * 1000), // 30 hours from now (tomorrow)
-      new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours from now (day after)
-    ];
-    return mockTimes[index % mockTimes.length];
+    return new Date(Date.now() + FALLBACK_MOCK_HOURS[index % FALLBACK_MOCK_HOURS.length] * 60 * 60 * 1000);
   }
 
   /**
@@ -884,25 +861,33 @@ class ThreadsDraftCraft {
       return;
     }
 
-    // Create compact status indicator to integrate into header (as a sibling within the h1, not inside the title span)
+    // Create compact status indicator to integrate into header
     const statusIndicator = document.createElement('span');
     statusIndicator.className = 'threads-draftcraft-status';
-    statusIndicator.innerHTML = `
-      <span style="
-        margin-left: 8px;
-        font-size: 12px;
-        font-weight: 400;
-        opacity: 0.8;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-      ">
-        <svg width="12" height="12" viewBox="0 0 12 12" style="display: inline-block; margin-right: 2px;">
-          <path d="M6 2L6 10M3 7L6 10L9 7" stroke="#4CAF50" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        ${this.sortOrder === 'earliest' ? 'Earliest' : 'Latest'} First
-      </span>
-    `;
+
+    const innerSpan = document.createElement('span');
+    innerSpan.className = 'threads-draftcraft-status-label';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '12');
+    svg.setAttribute('height', '12');
+    svg.setAttribute('viewBox', '0 0 12 12');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.classList.add('threads-draftcraft-status-icon');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M6 2L6 10M3 7L6 10L9 7');
+    path.setAttribute('stroke', '#4CAF50');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+
+    innerSpan.appendChild(svg);
+    innerSpan.appendChild(document.createTextNode(
+      ` ${this.sortOrder === 'earliest' ? 'Earliest' : 'Latest'} First`
+    ));
+    statusIndicator.appendChild(innerSpan);
 
     // Integrate the status into the header container (sibling to h1)
     headerContainer.appendChild(statusIndicator);
@@ -964,14 +949,9 @@ class ThreadsDraftCraft {
     const dayStart = this.startOfDay(baseDate);
     const dayEnd = this.endOfDay(baseDate);
 
-    // Define active window 06:00 - 23:00 to have more room when crowded
-    const windowStartHour = 6;
-    const windowEndHour = 23;
+    const minTime = isToday ? new Date(Math.max(now.getTime() + SUGGESTION_MIN_FUTURE_MINUTES * 60000, new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), SUGGESTION_WINDOW_START_HOUR).getTime())) : new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), SUGGESTION_WINDOW_START_HOUR);
 
-    // For today, exclude past times and start from at least 30 minutes in future
-    const minTime = isToday ? new Date(Math.max(now.getTime() + 30*60000, new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), windowStartHour).getTime())) : new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), windowStartHour);
-
-    const endWindow = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), windowEndHour, 0, 0, 0);
+    const endWindow = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), SUGGESTION_WINDOW_END_HOUR, 0, 0, 0);
 
     const taken = [...(existingTimes||[])].filter(d => d >= dayStart && d <= dayEnd);
 
@@ -1001,7 +981,7 @@ class ThreadsDraftCraft {
     };
 
     // 1) Try 3-hour cadence anchors spread across the day
-    for (let hour = windowStartHour; hour <= windowEndHour && suggestions.length < 3; hour += 3) {
+    for (let hour = SUGGESTION_WINDOW_START_HOUR; hour <= SUGGESTION_WINDOW_END_HOUR && suggestions.length < SUGGESTION_COUNT; hour += 3) {
       const slot = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hour, 0, 0, 0);
       if (slot < minTime || slot > endWindow) continue;
       const cand = withRandomMinutes(slot);
@@ -1009,7 +989,7 @@ class ThreadsDraftCraft {
     }
 
     // 2) If still short, try every 2 hours
-    for (let hour = windowStartHour; hour <= windowEndHour && suggestions.length < 3; hour += 2) {
+    for (let hour = SUGGESTION_WINDOW_START_HOUR; hour <= SUGGESTION_WINDOW_END_HOUR && suggestions.length < SUGGESTION_COUNT; hour += 2) {
       const slot = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hour, 0, 0, 0);
       if (slot < minTime || slot > endWindow) continue;
       const cand = withRandomMinutes(slot);
@@ -1017,7 +997,7 @@ class ThreadsDraftCraft {
     }
 
     // 3) If still short, try every hour
-    for (let hour = windowStartHour; hour <= windowEndHour && suggestions.length < 3; hour += 1) {
+    for (let hour = SUGGESTION_WINDOW_START_HOUR; hour <= SUGGESTION_WINDOW_END_HOUR && suggestions.length < SUGGESTION_COUNT; hour += 1) {
       const slot = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hour, 0, 0, 0);
       if (slot < minTime || slot > endWindow) continue;
       const cand = withRandomMinutes(slot);
@@ -1025,7 +1005,7 @@ class ThreadsDraftCraft {
     }
 
     // 4) If still short, find largest gaps between existing (taken + suggestions) within window and drop a time in the middle
-    if (suggestions.length < 3) {
+    if (suggestions.length < SUGGESTION_COUNT) {
       const pool = [...taken, ...suggestions].filter(t => t >= minTime && t <= endWindow).sort((a,b)=>a-b);
       // Add window bounds to compute gaps
       const bounds = [minTime, ...pool, endWindow];
@@ -1040,7 +1020,7 @@ class ThreadsDraftCraft {
       }
       gaps.sort((x,y)=>y.gapMs - x.gapMs);
       let gi = 0;
-      while (suggestions.length < 3 && gi < gaps.length) {
+      while (suggestions.length < SUGGESTION_COUNT && gi < gaps.length) {
         const {a, b} = gaps[gi++];
         const mid = new Date(a.getTime() + (b - a)/2);
         const cand = withRandomMinutes(mid);
@@ -1050,7 +1030,7 @@ class ThreadsDraftCraft {
 
     // Final safety: if we still don't have 3, place at deterministic offsets from minTime
     let offsetMin = 45;
-    while (suggestions.length < 3) {
+    while (suggestions.length < SUGGESTION_COUNT) {
       const cand = new Date(minTime.getTime() + offsetMin*60000);
       const c2 = withRandomMinutes(cand);
       if (!conflicts(c2, 30)) suggestions.push(c2);
@@ -1060,7 +1040,7 @@ class ThreadsDraftCraft {
     // Sort suggestions chronologically for display aesthetics
     suggestions.sort((a,b)=>a-b);
 
-    return suggestions.slice(0,3);
+    return suggestions.slice(0, SUGGESTION_COUNT);
   }
 
   formatTimeBadge(date) {
@@ -1099,15 +1079,22 @@ class ThreadsDraftCraft {
       dateCounts.set(key, (dateCounts.get(key) || 0) + 1);
     });
 
+    // Pre-compute scheduled times map once (not inside loop)
+    const scheduledMap = this.collectScheduledByDate();
+    const now = new Date();
+    const todayKey = this.getDateKey(now);
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    const tomorrowKey = this.getDateKey(tomorrow);
+
     let lastDateKey = null;
 
     this.drafts.forEach((draft) => {
       const dt = draft.scheduledTime instanceof Date ? draft.scheduledTime : null;
-      if (!dt) return; // Only for scheduled items
+      if (!dt) return;
 
-      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      const key = this.getDateKey(dt);
       if (key !== lastDateKey) {
-        // Create divider element
         const divider = document.createElement('div');
         divider.className = 'threads-draftcraft-date-divider';
 
@@ -1120,30 +1107,20 @@ class ThreadsDraftCraft {
         try {
           formattedDate = dt.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         } catch (e) {
-          formattedDate = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+          formattedDate = key;
         }
-        const now = new Date();
-        const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const tomorrow = new Date(now);
-        tomorrow.setDate(now.getDate() + 1);
-        const tomorrowKey = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
         let prefix = '';
-        if (key === todayKey) {
-          prefix = 'Today';
-        } else if (key === tomorrowKey) {
-          prefix = 'Tomorrow';
-        }
+        if (key === todayKey) prefix = 'Today';
+        else if (key === tomorrowKey) prefix = 'Tomorrow';
         label.textContent = prefix ? `${prefix}, ${formattedDate}` : formattedDate;
 
-        // Suggestions badges container
         const suggestionsWrap = document.createElement('div');
         suggestionsWrap.className = 'threads-draftcraft-date-suggestions';
 
-        // Create count badge
         const count = dateCounts.get(key) || 0;
         const countEl = document.createElement('span');
         countEl.className = 'threads-draftcraft-date-count';
-        countEl.textContent = `${count}`;
+        countEl.textContent = String(count);
         countEl.setAttribute('aria-label', `${count} scheduled ${count === 1 ? 'post' : 'posts'} on ${label.textContent}`);
 
         header.appendChild(label);
@@ -1153,24 +1130,20 @@ class ThreadsDraftCraft {
         const line = document.createElement('div');
         line.className = 'threads-draftcraft-date-line';
 
-        // Generate suggestions and render badges
-        const scheduledMap = this.collectScheduledByDate();
+        // Generate suggestions using pre-computed map
         const existingTimes = scheduledMap.get(key) || [];
         const sugDates = this.generateSuggestionsForDate(dt, existingTimes);
-        if (sugDates.length > 0) {
-          sugDates.forEach(sdate => {
-            const b = document.createElement('span');
-            b.className = 'threads-draftcraft-date-suggestion';
-            b.textContent = this.formatTimeBadge(sdate);
-            b.setAttribute('data-threads-draftcraft-suggestion', sdate.toISOString());
-            suggestionsWrap.appendChild(b);
-          });
-        }
+        sugDates.forEach(sdate => {
+          const b = document.createElement('span');
+          b.className = 'threads-draftcraft-date-suggestion';
+          b.textContent = this.formatTimeBadge(sdate);
+          b.setAttribute('data-threads-draftcraft-suggestion', sdate.toISOString());
+          suggestionsWrap.appendChild(b);
+        });
 
         divider.appendChild(header);
         divider.appendChild(line);
 
-        // Insert before the first draft of this date
         if (draft.element && draft.element.parentElement === container) {
           container.insertBefore(divider, draft.element);
         }
@@ -1238,16 +1211,7 @@ class ThreadsDraftCraft {
         // Create compact time info to integrate with posting text
         const timeInfo = document.createElement('span');
         timeInfo.className = 'threads-draftcraft-time-info';
-        timeInfo.style.cssText = `
-          margin-left: 6px;
-          color: #1DA1F2;
-          font-weight: 500;
-          background: rgba(29, 161, 242, 0.1);
-          padding: 0 6px;
-          border-radius: 4px;
-          display: inline-block;
-        `;
-        timeInfo.textContent = `${draft.scheduledTimeStr}`;
+        timeInfo.textContent = escapeText(draft.scheduledTimeStr);
 
         // Integrate the time info with the existing posting text
         postingTextNode.parentElement.appendChild(timeInfo);
@@ -1255,17 +1219,12 @@ class ThreadsDraftCraft {
         // Fallback: if no "Posting" text found, add a subtle indicator at the top
         const timeIndicator = document.createElement('div');
         timeIndicator.className = 'threads-draftcraft-time-subtle';
-        timeIndicator.innerHTML = `
-          <div style="
-            color: #1DA1F2;
-            font-size: 10px;
-            font-weight: 500;
-            margin: 2px 0;
-            opacity: 0.8;
-          ">
-            📅 ${draft.scheduledTimeStr}
-          </div>
-        `;
+
+        const innerDiv = document.createElement('div');
+        innerDiv.className = 'threads-draftcraft-time-subtle-inner';
+        innerDiv.textContent = escapeText(draft.scheduledTimeStr);
+        timeIndicator.appendChild(innerDiv);
+
         draft.element.insertBefore(timeIndicator, draft.element.firstChild);
       }
 
@@ -1303,25 +1262,15 @@ class ThreadsDraftCraft {
       return;
     }
 
-    // Create compact count badge to integrate into header (append to h1, not to inner span)
+    // Create compact count badge to integrate into header
     const countBadge = document.createElement('span');
     countBadge.className = 'threads-draftcraft-count-badge';
-    countBadge.innerHTML = `
-      <span style="
-        margin-left: 8px;
-        background: rgba(76, 175, 80, 0.15);
-        color: #4CAF50;
-        padding: 2px 6px;
-        border-radius: 10px;
-        font-size: 11px;
-        font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-        gap: 2px;
-      ">
-        📊 ${this.drafts.length}
-      </span>
-    `;
+
+    const innerBadge = document.createElement('span');
+    innerBadge.className = 'threads-draftcraft-count-badge-inner';
+    innerBadge.textContent = this.drafts.length;
+    innerBadge.setAttribute('aria-label', `${this.drafts.length} drafts`);
+    countBadge.appendChild(innerBadge);
 
     // Integrate the count into the header container (sibling to h1)
     headerContainer.appendChild(countBadge);
@@ -1341,7 +1290,7 @@ class ThreadsDraftCraft {
 
     const next = scheduledDrafts[0];
     return {
-      content: next.content.substring(0, 50) + '...',
+      content: next.content.substring(0, NEXT_DRAFT_PREVIEW_LENGTH) + '...',
       timeStr: next.scheduledTimeStr
     };
   }
