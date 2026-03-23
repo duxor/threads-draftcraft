@@ -135,29 +135,32 @@ class ThreadsDraftCraft {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === 'changeSortOrder') {
         this.sortOrder = message.sortOrder;
-        this.processDrafts(null, true); // Force reprocessing
+        this.processDrafts(null, true);
       } else if (message.action === 'toggleAutoSort') {
         this.autoSort = message.enabled;
-        this.processDrafts(null, true); // Force reprocessing to apply/remove sorting immediately
+        this.processDrafts(null, true);
       } else if (message.action === 'toggleTimeIndicators') {
         this.showTimeIndicators = message.enabled;
-        this.processDrafts(null, true); // Force reprocessing to show/hide time indicators
+        this.processDrafts(null, true);
       } else if (message.action === 'toggleDraftCount') {
         this.showDraftCount = message.enabled;
-        this.processDrafts(null, true); // Force reprocessing to show/hide draft count
+        this.processDrafts(null, true);
       } else if (message.action === 'toggleSortIndicator') {
         this.showSortIndicator = message.enabled;
-        this.processDrafts(null, true); // Force reprocessing to show/hide sort indicator
+        this.processDrafts(null, true);
       } else if (message.action === 'toggleDateDivider') {
         this.showDateDivider = message.enabled;
-        this.processDrafts(null, true); // Reprocess to show/hide date dividers
+        this.processDrafts(null, true);
       } else if (message.action === 'getDraftStats') {
         sendResponse({
           totalDrafts: this.drafts.length,
           scheduledDrafts: this.drafts.filter(d => d.scheduledTime).length,
           nextScheduled: this.getNextScheduledDraft()
         });
+      } else if (message.action === 'ping') {
+        sendResponse({ success: true });
       }
+      return true; // Keep message channel open for async responses
     });
   }
 
@@ -303,34 +306,18 @@ class ThreadsDraftCraft {
     const hasMultipleScheduledPosts = (textContent.match(/posting (today|tomorrow) at/g) || []).length > 1;
 
     // Only return true if we have clear drafts indicators and no edit indicators
-    const isDrafts = hasDraftsText && (hasDraftsIndicator || hasMultipleScheduledPosts);
-
-    // if (isDrafts) {
-    //   console.log('[Threads DraftCraft] Confirmed drafts dialog with indicators');
-    // }
-
-    return isDrafts;
+    return hasDraftsText && (hasDraftsIndicator || hasMultipleScheduledPosts);
   }
 
   /**
    * Remove existing extension enhancements from dialog
    */
   removeExistingEnhancements(dialogElement) {
-    // Remove extension indicators
-    const indicators = dialogElement.querySelectorAll('.threads-draftcraft-indicator');
-    indicators.forEach(indicator => indicator.remove());
-
-    // Remove draft count indicators
-    const countIndicators = dialogElement.querySelectorAll('.threads-draftcraft-count');
-    countIndicators.forEach(indicator => indicator.remove());
-
-    // Remove time indicators and reset processed flags
-    const timeIndicators = dialogElement.querySelectorAll('.threads-draftcraft-time');
-    timeIndicators.forEach(indicator => indicator.remove());
-
-    // Remove date dividers
-    const dateDividers = dialogElement.querySelectorAll('.threads-draftcraft-date-divider');
-    dateDividers.forEach(divider => divider.remove());
+    // Remove all extension-injected elements in a single DOM query
+    const extensionElements = dialogElement.querySelectorAll(
+      '.threads-draftcraft-indicator, .threads-draftcraft-count, .threads-draftcraft-time, .threads-draftcraft-date-divider, .threads-draftcraft-time-subtle, .threads-draftcraft-time-info, .threads-draftcraft-status, .threads-draftcraft-count-badge'
+    );
+    extensionElements.forEach(el => el.remove());
 
     // Reset all processed flags on draft elements
     const processedElements = dialogElement.querySelectorAll('[data-threads-draftcraft-time-added]');
@@ -637,11 +624,23 @@ class ThreadsDraftCraft {
    * If target is same as current day, returns 7 (next week)
    */
   _daysUntilDay(targetDayIndex, currentDayIndex) {
+    if (targetDayIndex < 0 || targetDayIndex > 6 || currentDayIndex < 0 || currentDayIndex > 6) {
+      return 1; // Safe fallback: tomorrow
+    }
     let daysUntil = targetDayIndex - currentDayIndex;
     if (daysUntil <= 0) {
       daysUntil += 7; // Next week if day has passed or is today
     }
     return daysUntil;
+  }
+
+  /**
+   * Get safe element index within its parent (returns 0 if not found or detached)
+   */
+  _safeElementIndex(element) {
+    if (!element || !element.parentElement) return 0;
+    const idx = Array.from(element.parentElement.children).indexOf(element);
+    return idx >= 0 ? idx : 0;
   }
 
   extractScheduledTime(element) {
@@ -678,6 +677,8 @@ class ThreadsDraftCraft {
         const hour24 = this._to24Hour(hours, isPM);
         const currentYear = new Date().getFullYear();
         const scheduledDate = new Date(currentYear, monthIndex, dateNum, hour24, minutes, 0, 0);
+
+        if (isNaN(scheduledDate.getTime())) return null;
 
         if (scheduledDate < new Date()) {
           scheduledDate.setFullYear(currentYear + 1);
@@ -728,7 +729,7 @@ class ThreadsDraftCraft {
           scheduledDate.setDate(now.getDate() + daysUntil);
 
           // Deterministic time based on element position (not random)
-          const index = Array.from(element.parentElement?.children || []).indexOf(element);
+          const index = this._safeElementIndex(element);
           const deterministicHour = BUSINESS_HOURS_START + ((index * 3) % (BUSINESS_HOURS_END - BUSINESS_HOURS_START));
           scheduledDate.setHours(deterministicHour, 0, 0, 0);
           return scheduledDate;
@@ -738,13 +739,13 @@ class ThreadsDraftCraft {
 
     // Check for "today" indicators without specific time - deterministic
     if (textContent.includes('posting today') || textContent.includes('today at')) {
-      const index = Array.from(element.parentElement?.children || []).indexOf(element);
+      const index = this._safeElementIndex(element);
       return new Date(Date.now() + (1 + index * 2) * 60 * 60 * 1000);
     }
 
     // Check for "tomorrow" indicators without specific time - deterministic
     if (textContent.includes('posting tomorrow') || textContent.includes('tomorrow at')) {
-      const index = Array.from(element.parentElement?.children || []).indexOf(element);
+      const index = this._safeElementIndex(element);
       return new Date(Date.now() + (24 + index * 2) * 60 * 60 * 1000);
     }
 
@@ -760,8 +761,7 @@ class ThreadsDraftCraft {
     }
 
     // Final fallback: deterministic times based on position
-    const index = parseInt(element.getAttribute('data-draft-index')) ||
-      Array.from(element.parentElement?.children || []).indexOf(element) || 0;
+    const index = parseInt(element.getAttribute('data-draft-index')) || this._safeElementIndex(element);
 
     return new Date(Date.now() + FALLBACK_MOCK_HOURS[index % FALLBACK_MOCK_HOURS.length] * 60 * 60 * 1000);
   }
@@ -801,15 +801,16 @@ class ThreadsDraftCraft {
    */
   sortDrafts() {
     this.drafts.sort((a, b) => {
-      if (!a.scheduledTime && !b.scheduledTime) return 0;
+      if (!a.scheduledTime && !b.scheduledTime) return a.originalOrder - b.originalOrder;
       if (!a.scheduledTime) return 1;
       if (!b.scheduledTime) return -1;
 
-      if (this.sortOrder === 'earliest') {
-        return a.scheduledTime - b.scheduledTime;
-      } else {
-        return b.scheduledTime - a.scheduledTime;
-      }
+      const timeDiff = this.sortOrder === 'earliest'
+        ? a.scheduledTime - b.scheduledTime
+        : b.scheduledTime - a.scheduledTime;
+
+      // Stable sort: use originalOrder as tiebreaker for equal times
+      return timeDiff !== 0 ? timeDiff : a.originalOrder - b.originalOrder;
     });
   }
 
@@ -901,11 +902,13 @@ class ThreadsDraftCraft {
 
     // Find the container that holds all drafts
     const container = this.drafts[0].element.parentElement;
-    if (!container) return;
+    if (!container || !document.contains(container)) return;
 
-    // Reorder elements
+    // Reorder elements (only if still in DOM)
     this.drafts.forEach((draft) => {
-      container.appendChild(draft.element);
+      if (document.contains(draft.element)) {
+        container.appendChild(draft.element);
+      }
     });
   }
 
@@ -968,11 +971,7 @@ class ThreadsDraftCraft {
     };
 
     // Minute generator: never return 00, randomize 1..59
-    const randomNonZeroMinute = () => {
-      let m = Math.floor(Math.random()*59) + 1; // 1..59
-      if (m === 60) m = 59;
-      return m;
-    };
+    const randomNonZeroMinute = () => Math.floor(Math.random() * 59) + 1;
 
     const withRandomMinutes = (dt) => {
       const nd = new Date(dt);
@@ -1075,7 +1074,7 @@ class ThreadsDraftCraft {
     this.drafts.forEach((d) => {
       const dt = d.scheduledTime instanceof Date ? d.scheduledTime : null;
       if (!dt) return;
-      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      const key = this.getDateKey(dt);
       dateCounts.set(key, (dateCounts.get(key) || 0) + 1);
     });
 
@@ -1212,6 +1211,7 @@ class ThreadsDraftCraft {
         const timeInfo = document.createElement('span');
         timeInfo.className = 'threads-draftcraft-time-info';
         timeInfo.textContent = escapeText(draft.scheduledTimeStr);
+        timeInfo.setAttribute('aria-label', `Scheduled ${draft.scheduledTimeStr}`);
 
         // Integrate the time info with the existing posting text
         postingTextNode.parentElement.appendChild(timeInfo);
@@ -1219,6 +1219,7 @@ class ThreadsDraftCraft {
         // Fallback: if no "Posting" text found, add a subtle indicator at the top
         const timeIndicator = document.createElement('div');
         timeIndicator.className = 'threads-draftcraft-time-subtle';
+        timeIndicator.setAttribute('aria-label', `Scheduled ${draft.scheduledTimeStr}`);
 
         const innerDiv = document.createElement('div');
         innerDiv.className = 'threads-draftcraft-time-subtle-inner';

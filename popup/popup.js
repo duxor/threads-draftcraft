@@ -400,11 +400,12 @@ class ThreadsDraftCraftPopup {
   showError(message) {
     const errorMessage = document.getElementById('errorMessage');
     const errorText = document.getElementById('errorText');
-    
+
     if (errorMessage && errorText) {
       errorText.textContent = message;
       errorMessage.style.display = 'flex';
-      
+      errorMessage.focus();
+
       // Auto hide after 5 seconds
       setTimeout(() => {
         this.hideError();
@@ -428,11 +429,11 @@ class ThreadsDraftCraftPopup {
   showSuccess(message) {
     const successMessage = document.getElementById('successMessage');
     const successText = document.getElementById('successText');
-    
+
     if (successMessage && successText) {
       successText.textContent = message;
       successMessage.style.display = 'flex';
-      
+
       // Auto hide after 3 seconds
       setTimeout(() => {
         this.hideSuccess();

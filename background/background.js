@@ -283,7 +283,8 @@ class ThreadsDraftCraftBackground {
         autoSort: true,
         showTimeIndicators: true,
         showDraftCount: true,
-        showSortIndicator: true
+        showSortIndicator: true,
+        showDateDivider: true
       });
 
       return result;
@@ -373,27 +374,21 @@ class ThreadsDraftCraftBackground {
   logError(error, context) {
     bgLog(`ERROR: ${context}:`, error);
 
-    // Store error in local storage for debugging (optional)
-    try {
-      chrome.storage.local.get('errorLog').then((result) => {
-        const errorLog = result.errorLog || [];
-        errorLog.push({
-          timestamp: Date.now(),
-          error: error.toString(),
-          context: context,
-          stack: error.stack
-        });
-
-        // Keep only last 50 errors
-        if (errorLog.length > 50) {
-          errorLog.splice(0, errorLog.length - 50);
-        }
-
-        chrome.storage.local.set({ errorLog });
+    // Store error in local storage for debugging
+    chrome.storage.local.get('errorLog').then((result) => {
+      const errorLog = result.errorLog || [];
+      errorLog.push({
+        timestamp: Date.now(),
+        error: error.toString(),
+        context: context,
+        stack: error.stack
       });
-    } catch (storageError) {
+
+      // Keep only last 50 errors
+      chrome.storage.local.set({ errorLog: errorLog.slice(-50) });
+    }).catch((storageError) => {
       bgLog('ERROR: Failed to log error:', storageError);
-    }
+    });
   }
 
   /**
