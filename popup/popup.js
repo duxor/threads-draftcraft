@@ -21,7 +21,7 @@ class ThreadsDraftCraftPopup {
    * Initialize the popup
    */
   async init() {
-    console.log('[Threads DraftCraft] Popup initialized');
+    // Popup initialized
 
     // Load current settings
     await this.loadSettings();
@@ -55,7 +55,7 @@ class ThreadsDraftCraftPopup {
 
       this.settings = { ...this.settings, ...result };
     } catch (error) {
-      console.error('[Threads DraftCraft] Failed to load settings:', error);
+      // Settings load failed
       this.showError('Failed to load settings');
     }
   }
@@ -66,9 +66,9 @@ class ThreadsDraftCraftPopup {
   async saveSettings() {
     try {
       await chrome.storage.sync.set(this.settings);
-      console.log('[Threads DraftCraft] Settings saved:', this.settings);
+      // Settings saved
     } catch (error) {
-      console.error('[Threads DraftCraft] Failed to save settings:', error);
+      // Settings save failed
       this.showError('Failed to save settings');
     }
   }
@@ -241,7 +241,7 @@ class ThreadsDraftCraftPopup {
         this.showNoStatsMessage();
       }
     } catch (error) {
-      console.error('[Threads DraftCraft] Failed to load draft stats:', error);
+      // Draft stats load failed
       this.showNoStatsMessage();
     }
   }
@@ -261,7 +261,7 @@ class ThreadsDraftCraftPopup {
     }
 
     if (scheduledDrafts) {
-      scheduledDrafts.textContent = stats.totalDrafts || '0';
+      scheduledDrafts.textContent = stats.scheduledDrafts || stats.totalDrafts || '0';
     }
 
     if (stats.nextScheduled && nextScheduledContainer && nextDraftText && nextDraftTime) {
@@ -275,140 +275,58 @@ class ThreadsDraftCraftPopup {
 
 
   /**
-   * Handle sort order change
+   * Generic helper: send a message to the active threads.com tab
    */
+  async _sendToActiveTab(message) {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url.includes('threads.com')) {
+        await chrome.tabs.sendMessage(tab.id, message);
+      }
+    } catch (error) {
+      // Tab might not have content script
+    }
+  }
+
+  /**
+   * Generic toggle handler to reduce duplication
+   */
+  async _toggleSetting(settingKey, action, value, label) {
+    this.settings[settingKey] = value;
+    await this.saveSettings();
+    await this._sendToActiveTab({ action, enabled: value });
+    if (typeof value === 'boolean') {
+      this.showSuccess(value ? `${label} enabled` : `${label} disabled`);
+    } else {
+      this.showSuccess(`${label} changed to ${value} first`);
+    }
+  }
+
   async handleSortOrderChange(order) {
     this.settings.sortOrder = order;
     await this.saveSettings();
-
-    // Send message to content script
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url.includes('threads.com')) {
-        await chrome.tabs.sendMessage(tab.id, {
-          action: 'changeSortOrder',
-          sortOrder: order
-        });
-      }
-    } catch (error) {
-      console.error('[Threads DraftCraft] Failed to change sort order:', error);
-    }
-
+    await this._sendToActiveTab({ action: 'changeSortOrder', sortOrder: order });
     this.showSuccess(`Sort order changed to ${order} first`);
   }
 
-  /**
-   * Handle auto sort toggle
-   */
   async handleAutoSortToggle(enabled) {
-    this.settings.autoSort = enabled;
-    await this.saveSettings();
-
-    // Send message to content script
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url.includes('threads.com')) {
-        await chrome.tabs.sendMessage(tab.id, {
-          action: 'toggleAutoSort',
-          enabled: enabled
-        });
-      }
-    } catch (error) {
-      console.error('[Threads DraftCraft] Failed to toggle auto sort:', error);
-    }
-
-    this.showSuccess(enabled ? 'Auto sort enabled' : 'Auto sort disabled');
+    await this._toggleSetting('autoSort', 'toggleAutoSort', enabled, 'Auto sort');
   }
 
-  /**
-   * Handle time indicators toggle
-   */
   async handleTimeIndicatorsToggle(enabled) {
-    this.settings.showTimeIndicators = enabled;
-    await this.saveSettings();
-
-    // Send message to content script
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url.includes('threads.com')) {
-        await chrome.tabs.sendMessage(tab.id, {
-          action: 'toggleTimeIndicators',
-          enabled: enabled
-        });
-      }
-    } catch (error) {
-      console.error('[Threads DraftCraft] Failed to toggle time indicators:', error);
-    }
-
-    this.showSuccess(enabled ? 'Time indicators enabled' : 'Time indicators disabled');
+    await this._toggleSetting('showTimeIndicators', 'toggleTimeIndicators', enabled, 'Time indicators');
   }
 
-  /**
-   * Handle draft count toggle
-   */
   async handleDraftCountToggle(enabled) {
-    this.settings.showDraftCount = enabled;
-    await this.saveSettings();
-
-    // Send message to content script
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url.includes('threads.com')) {
-        await chrome.tabs.sendMessage(tab.id, {
-          action: 'toggleDraftCount',
-          enabled: enabled
-        });
-      }
-    } catch (error) {
-      console.error('[Threads DraftCraft] Failed to toggle draft count:', error);
-    }
-
-    this.showSuccess(enabled ? 'Draft count enabled' : 'Draft count disabled');
+    await this._toggleSetting('showDraftCount', 'toggleDraftCount', enabled, 'Draft count');
   }
 
-  /**
-   * Handle sort indicator toggle
-   */
   async handleSortIndicatorToggle(enabled) {
-    this.settings.showSortIndicator = enabled;
-    await this.saveSettings();
-
-    // Send message to content script
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url.includes('threads.com')) {
-        await chrome.tabs.sendMessage(tab.id, {
-          action: 'toggleSortIndicator',
-          enabled: enabled
-        });
-      }
-    } catch (error) {
-      console.error('[Threads DraftCraft] Failed to toggle sort indicator:', error);
-    }
-
-    this.showSuccess(enabled ? 'Sort indicator enabled' : 'Sort indicator disabled');
+    await this._toggleSetting('showSortIndicator', 'toggleSortIndicator', enabled, 'Sort indicator');
   }
 
-  /**
-   * Handle date divider toggle
-   */
   async handleDateDividerToggle(enabled) {
-    this.settings.showDateDivider = enabled;
-    await this.saveSettings();
-
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url.includes('threads.com')) {
-        await chrome.tabs.sendMessage(tab.id, {
-          action: 'toggleDateDivider',
-          enabled: enabled
-        });
-      }
-    } catch (error) {
-      console.error('[Threads DraftCraft] Failed to toggle date divider:', error);
-    }
-
-    this.showSuccess(enabled ? 'Date divider enabled' : 'Date divider disabled');
+    await this._toggleSetting('showDateDivider', 'toggleDateDivider', enabled, 'Date divider');
   }
 
   /**
@@ -429,7 +347,7 @@ class ThreadsDraftCraftPopup {
       await this.loadDraftStats();
       this.showSuccess('Drafts refreshed');
     } catch (error) {
-      console.error('[Threads DraftCraft] Failed to refresh drafts:', error);
+      // Refresh failed
       this.showError('Failed to refresh drafts');
     } finally {
       this.showLoading(false);
@@ -446,7 +364,7 @@ class ThreadsDraftCraftPopup {
       });
       window.close();
     } catch (error) {
-      console.error('[Threads DraftCraft] Failed to open Threads:', error);
+      // Open Threads failed
       this.showError('Failed to open Threads.com');
     }
   }
@@ -462,7 +380,7 @@ class ThreadsDraftCraftPopup {
         this.showThreadsNotActiveMessage();
       }
     } catch (error) {
-      console.error('[Threads DraftCraft] Failed to check tab:', error);
+      // Tab check failed
     }
   }
 
@@ -482,11 +400,12 @@ class ThreadsDraftCraftPopup {
   showError(message) {
     const errorMessage = document.getElementById('errorMessage');
     const errorText = document.getElementById('errorText');
-    
+
     if (errorMessage && errorText) {
       errorText.textContent = message;
       errorMessage.style.display = 'flex';
-      
+      errorMessage.focus();
+
       // Auto hide after 5 seconds
       setTimeout(() => {
         this.hideError();
@@ -510,11 +429,11 @@ class ThreadsDraftCraftPopup {
   showSuccess(message) {
     const successMessage = document.getElementById('successMessage');
     const successText = document.getElementById('successText');
-    
+
     if (successMessage && successText) {
       successText.textContent = message;
       successMessage.style.display = 'flex';
-      
+
       // Auto hide after 3 seconds
       setTimeout(() => {
         this.hideSuccess();
@@ -545,20 +464,10 @@ class ThreadsDraftCraftPopup {
     // Show info message
     const infoDiv = document.createElement('div');
     infoDiv.className = 'info-message';
-    infoDiv.innerHTML = `
-      <div style="
-        background: rgba(255, 193, 7, 0.1);
-        border: 1px solid rgba(255, 193, 7, 0.3);
-        color: #856404;
-        padding: 8px 12px;
-        border-radius: 4px;
-        margin: 8px 20px;
-        font-size: 12px;
-        text-align: center;
-      ">
-        📌 Navigate to Threads.com to see draft statistics
-      </div>
-    `;
+    const innerInfo = document.createElement('div');
+    innerInfo.className = 'info-message-content';
+    innerInfo.textContent = 'Navigate to Threads.com to see draft statistics';
+    infoDiv.appendChild(innerInfo);
 
     const statsSection = document.querySelector('.stats-section');
     if (statsSection && !document.querySelector('.info-message')) {

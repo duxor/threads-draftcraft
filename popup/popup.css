@@ -516,6 +516,18 @@ input:checked + .toggle-switch:hover .toggle-slider {
   }
 }
 
+/* Info message */
+.info-message-content {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  color: #856404;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin: 8px 20px;
+  font-size: 12px;
+  text-align: center;
+}
+
 /* Scrollbar Styles */
 body::-webkit-scrollbar {
   width: 6px;
@@ -779,5 +791,11 @@ body::-webkit-scrollbar-thumb:hover {
   
   .next-draft-time {
     color: #ffffff !important;
+  }
+
+  .info-message-content {
+    background: rgba(255, 193, 7, 0.15);
+    border-color: rgba(255, 193, 7, 0.4);
+    color: #ffc107;
   }
 }
